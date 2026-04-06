@@ -30,6 +30,8 @@ pip-wheel-metadata/
 # Logs and local runtime files
 *.log
 *.pid
+data/uploads/*
+!data/uploads/.gitkeep
 
 # Environment and secrets
 .env
@@ -39,4 +41,3 @@ pip-wheel-metadata/
 # IDEs
 .idea/
 .vscode/
-

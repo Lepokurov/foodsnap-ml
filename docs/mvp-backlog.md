@@ -11,6 +11,33 @@ This backlog reflects the selected MVP architecture:
 
 The focus is an end-to-end backend MVP, not maximum prediction accuracy.
 
+## Current implementation snapshot
+
+Already done in local stub form:
+- FastAPI project skeleton
+- environment-based config
+- basic logging
+- health endpoint
+- registration and login
+- bearer-token protected meal and summary endpoints
+- meal upload with local file persistence
+- in-memory async queue and background worker
+- stub dish recognition
+- rule-based calorie estimation
+- meal history, meal detail, and daily summary
+- basic API smoke tests
+
+Still not done:
+- real `PostgreSQL`
+- migrations
+- real `S3`
+- real `SQS`
+- Docker and infra baseline
+
+Recommended rule for future threads:
+- treat milestones `1` to `7` as functionally prototyped
+- when continuing MVP work, prefer replacing stubs with real integrations over adding parallel duplicate code
+
 ## Milestone 1. Foundation
 
 Goal: create a stable backend skeleton with clear configuration and persistence boundaries.
@@ -29,6 +56,11 @@ Acceptance criteria:
 - migrations can create the initial schema
 - health endpoint reports a healthy application state
 
+Current status:
+- partially complete
+- local app, config, logging, and health endpoint exist
+- real database and migrations are still pending
+
 ## Milestone 2. Authentication
 
 Goal: support isolated user data and authenticated API access.
@@ -44,6 +76,9 @@ Acceptance criteria:
 - a user can register and log in
 - protected endpoints reject unauthenticated access
 - user-specific data is isolated by user identity
+
+Current status:
+- complete in stub form
 
 ## Milestone 3. Meal Upload Flow
 
@@ -62,6 +97,10 @@ Acceptance criteria:
 - a `meal_entry` is created in the database
 - the response contains enough data to poll or fetch the meal later
 
+Current status:
+- complete in stub form
+- local storage and in-memory meal records are used instead of `S3` and `PostgreSQL`
+
 ## Milestone 4. Asynchronous Processing
 
 Goal: decouple upload from meal analysis.
@@ -79,6 +118,10 @@ Acceptance criteria:
 - task failures do not crash the whole service
 - meal status reflects the processing lifecycle
 
+Current status:
+- complete in stub form
+- in-memory queue replaces `SQS`
+
 ## Milestone 5. Dish Recognition
 
 Goal: produce the first meaningful recognition result.
@@ -93,6 +136,10 @@ Acceptance criteria:
 - the worker writes a recognized dish label for supported cases
 - the result includes confidence information
 - prediction metadata is stored for future debugging and model iteration
+
+Current status:
+- complete in stub form
+- classifier is filename-based heuristic logic for now
 
 Notes:
 - initial implementation may use a placeholder recognizer or lightweight pre-trained integration
@@ -113,6 +160,9 @@ Acceptance criteria:
 - unsupported dishes fall back to a clear default behavior
 - the estimation logic is deterministic and inspectable
 
+Current status:
+- complete in stub form
+
 Notes:
 - portion estimation from photo alone is out of scope for the first MVP
 - the first version should be honest about approximation quality
@@ -132,6 +182,9 @@ Acceptance criteria:
 - a user can retrieve a single processed meal
 - a user can request a daily summary with total estimated calories
 
+Current status:
+- complete in stub form
+
 ## Milestone 8. Deployment Baseline
 
 Goal: package the project in a way that is deployable to AWS.
@@ -146,6 +199,9 @@ Acceptance criteria:
 - the app can be containerized
 - infra layout is defined clearly enough for implementation
 - deployment responsibilities of API and worker are separated
+
+Current status:
+- not started
 
 ## Non-goals for the first MVP
 
@@ -171,10 +227,9 @@ Acceptance criteria:
 ## Suggested implementation order
 
 1. foundation
-2. auth
-3. meal upload
-4. queue + worker
-5. recognition
-6. calorie estimation
-7. history + summary
-8. containerization + AWS deployment
+2. replace in-memory user and meal persistence with database repositories
+3. add migrations and schema
+4. swap local storage stub for real `S3` integration
+5. swap in-memory queue for real `SQS`
+6. keep worker flow and API contract stable during integration swap
+7. add containerization and AWS deployment baseline

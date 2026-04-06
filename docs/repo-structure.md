@@ -2,6 +2,34 @@
 
 This document describes the planned repository layout for the first implementation stage. It is intentionally written before code exists so the project can be built with clear boundaries.
 
+## Current reality
+
+The repository already contains a working local stub MVP.
+
+Implemented now:
+- `app/main.py`
+- `app/api/routes/*`
+- `app/api/deps/*`
+- `app/core/*`
+- `app/schemas/*`
+- `app/services/*`
+- `app/workers/meal_analysis_worker.py`
+- `app/ml/*`
+- `app/utils/*`
+- `tests/api/test_api.py`
+- `scripts/run-api.sh`
+
+Planned but not implemented yet:
+- `app/db/*`
+- `migrations/*`
+- `infra/*`
+- `docker/*`
+
+Meaning for future threads:
+- do not assume the repo is only a plan
+- do not rescan the whole tree before making simple backend changes
+- the current code already supports a local end-to-end flow with stubs
+
 ## Top-level layout
 
 ```text
@@ -26,18 +54,6 @@ aws-pet-proj/
       config.py
       security.py
       logging.py
-    db/
-      base.py
-      session.py
-      models/
-        user.py
-        meal_entry.py
-        meal_prediction.py
-        food_reference.py
-      repositories/
-        users.py
-        meals.py
-        summaries.py
     schemas/
       auth.py
       meal.py
@@ -62,30 +78,17 @@ aws-pet-proj/
   migrations/
     versions/
   tests/
-    conftest.py
     api/
+      test_api.py
     services/
     workers/
-  infra/
-    terraform/
-      environments/
-        dev/
-        prod/
-      modules/
-        ecs_service/
-        rds/
-        s3/
-        sqs/
-  docker/
-    api.Dockerfile
-    worker.Dockerfile
   scripts/
     run-api.sh
     run-worker.sh
-    migrate.sh
+  data/
+    uploads/
   .env.example
   pyproject.toml
-  alembic.ini
 ```
 
 ## File-by-file intent
@@ -100,7 +103,7 @@ Short durable memory file for future threads. It should capture the product goal
 Execution-oriented backlog. It should contain milestones, feature slices, and acceptance criteria for the MVP.
 
 ### `docs/repo-structure.md`
-This file. It defines intended responsibility boundaries before implementation starts.
+This file. It defines intended responsibility boundaries and highlights what already exists.
 
 ## Application files
 
@@ -134,33 +137,6 @@ Password hashing, token generation, and token verification logic.
 ### `app/core/logging.py`
 Application logging configuration and structured log setup.
 
-### `app/db/base.py`
-Base SQLAlchemy metadata import point for models and migrations.
-
-### `app/db/session.py`
-Database engine and session management.
-
-### `app/db/models/user.py`
-Database model for users.
-
-### `app/db/models/meal_entry.py`
-Database model for meal entries created from uploaded food photos.
-
-### `app/db/models/meal_prediction.py`
-Database model for storing ML-related prediction metadata, model version, and raw details if needed.
-
-### `app/db/models/food_reference.py`
-Reference nutrition table for known dishes and baseline calorie estimates.
-
-### `app/db/repositories/users.py`
-Database access helpers for user operations.
-
-### `app/db/repositories/meals.py`
-Database access helpers for meal entry CRUD and filtered reads.
-
-### `app/db/repositories/summaries.py`
-Aggregate query helpers for daily summary and reporting endpoints.
-
 ### `app/schemas/auth.py`
 Pydantic schemas for authentication requests and responses.
 
@@ -189,16 +165,16 @@ Converts recognized dish labels into approximate calorie estimates using referen
 Computes and formats daily calorie summaries.
 
 ### `app/services/storage.py`
-Abstraction over file storage, initially targeting `S3`.
+Abstraction over file storage. Right now it writes to local disk as a stub and should later switch to `S3`.
 
 ### `app/services/queue.py`
-Queue abstraction for sending meal-analysis tasks to `SQS`.
+Queue abstraction for sending meal-analysis tasks. Right now it uses an in-memory async queue and should later switch to `SQS`.
 
 ### `app/workers/meal_analysis_worker.py`
-Background worker process that consumes queued jobs, downloads images, runs recognition, estimates calories, and updates the database.
+Background worker process that consumes queued jobs, loads images, runs recognition, estimates calories, and updates stub state.
 
 ### `app/ml/classifier.py`
-Recognition entrypoint. In the earliest version it may wrap a placeholder or heuristic classifier and later evolve into a real ML integration.
+Recognition entrypoint. The current version is a placeholder heuristic classifier based on filename patterns.
 
 ### `app/ml/label_mapping.py`
 Maps raw classifier output into normalized internal dish labels.
@@ -208,6 +184,37 @@ Date and timezone helpers, especially for daily summaries.
 
 ### `app/utils/ids.py`
 Optional helper utilities for object keys and internal identifiers.
+
+## Planned next files
+
+These are still expected later and are not implemented yet.
+
+### `app/db/base.py`
+Base SQLAlchemy metadata import point for models and migrations.
+
+### `app/db/session.py`
+Database engine and session management.
+
+### `app/db/models/user.py`
+Database model for users.
+
+### `app/db/models/meal_entry.py`
+Database model for meal entries created from uploaded food photos.
+
+### `app/db/models/meal_prediction.py`
+Database model for storing ML-related prediction metadata, model version, and raw details if needed.
+
+### `app/db/models/food_reference.py`
+Reference nutrition table for known dishes and baseline calorie estimates.
+
+### `app/db/repositories/users.py`
+Database access helpers for user operations.
+
+### `app/db/repositories/meals.py`
+Database access helpers for meal entry CRUD and filtered reads.
+
+### `app/db/repositories/summaries.py`
+Aggregate query helpers for daily summary and reporting endpoints.
 
 ## Infrastructure files
 

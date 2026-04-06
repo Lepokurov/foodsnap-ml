@@ -58,3 +58,28 @@ Detailed file-by-file project planning lives in:
 - Store enough metadata to improve the ML pipeline later.
 - Use AWS services that are practical for a backend-focused pet project.
 - Defer non-essential complexity until after the first end-to-end version works.
+
+## Current local MVP
+
+The repository now contains a first API implementation focused on speed of iteration:
+- `FastAPI` application scaffold under `app/`
+- in-memory persistence instead of `PostgreSQL`
+- local file storage stub under `data/uploads` instead of `S3`
+- in-memory async queue plus background worker instead of `SQS`
+- stub classifier and rule-based calorie estimator for end-to-end meal processing
+
+Implemented API endpoints:
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `GET /api/v1/health`
+- `POST /api/v1/meals`
+- `GET /api/v1/meals`
+- `GET /api/v1/meals/{meal_id}`
+- `GET /api/v1/summary/daily`
+
+Run locally:
+
+```bash
+python3 -m pip install -e '.[dev]'
+./scripts/run-api.sh
+```

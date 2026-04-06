@@ -2,6 +2,28 @@
 
 This file is a durable short-form briefing for future threads. It is meant to be read quickly before making product, backend, or infrastructure decisions.
 
+## Current status
+
+As of `2026-04-06`, the repository is no longer empty.
+
+Implemented locally:
+- `FastAPI` app scaffold
+- auth endpoints: register and login
+- protected meal endpoints: upload, list, detail
+- daily summary endpoint
+- background meal processing flow
+- stub classifier and rule-based calorie estimation
+
+Current temporary replacements:
+- `PostgreSQL` -> in-memory store
+- `S3` -> local file storage in `data/uploads`
+- `SQS` -> in-memory async queue
+
+Important note for future threads:
+- the API pipeline works end-to-end locally
+- current goal is not scaffolding anymore
+- next work should build on the existing code, not recreate structure from scratch
+
 ## Project
 
 Name: `FoodSnap ML`
@@ -29,6 +51,7 @@ The selected implementation path is the practical AWS-first version:
 Current decision:
 - do not use `RabbitMQ` in MVP
 - do not require `Redis` in MVP
+- use local stubs first before wiring real AWS services and database
 
 Reasoning:
 - `SQS` fits the AWS learning goal better
@@ -40,8 +63,8 @@ Reasoning:
 Included:
 - user registration and login
 - upload food photo
-- store image in `S3`
-- create meal entry in `PostgreSQL`
+- store image in `S3` or local stub during development
+- create meal entry in `PostgreSQL` or in-memory stub during development
 - process meal asynchronously through a worker
 - store recognized label, confidence, and estimated calories
 - fetch meal history
@@ -73,9 +96,14 @@ Preferred framing:
 Components:
 - `API service` on `FastAPI`
 - `Worker service` for async meal processing
-- `PostgreSQL` for primary data
-- `S3` for original image storage
-- `SQS` for background jobs
+- `PostgreSQL` for primary data in target architecture
+- `S3` for original image storage in target architecture
+- `SQS` for background jobs in target architecture
+
+Current local implementation:
+- in-memory state for users, meals, predictions, and food reference data
+- local file storage stub for uploaded images
+- in-memory queue plus background task worker
 
 Flow:
 1. user uploads a meal photo
@@ -121,9 +149,8 @@ Primary docs to read next:
 
 ## Immediate next step
 
-The next implementation phase should start from project scaffolding only:
-- create the FastAPI application skeleton
-- define models and migrations
-- prepare local development setup
-
-No application code has been created yet at the time of writing this document.
+The next implementation phase should continue from the current working stub MVP:
+- replace in-memory persistence with database repositories
+- introduce real `S3` integration behind the storage abstraction
+- introduce real `SQS` integration behind the queue abstraction
+- keep the existing API contract stable while swapping implementations
