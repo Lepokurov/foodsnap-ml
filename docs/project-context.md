@@ -13,6 +13,7 @@ Implemented locally:
 - daily summary endpoint
 - background meal processing flow
 - stub classifier and rule-based calorie estimation
+- `uv` workflow with committed `uv.lock` and project-local `.venv`
 
 Current temporary replacements:
 - `PostgreSQL` -> in-memory store
@@ -23,6 +24,7 @@ Important note for future threads:
 - the API pipeline works end-to-end locally
 - current goal is not scaffolding anymore
 - next work should build on the existing code, not recreate structure from scratch
+- local Python setup should use `uv sync` and `uv run`, not ad-hoc `pip`
 
 ## Project
 
@@ -52,11 +54,13 @@ Current decision:
 - do not use `RabbitMQ` in MVP
 - do not require `Redis` in MVP
 - use local stubs first before wiring real AWS services and database
+- use `uv` as the standard Python workflow tool
 
 Reasoning:
 - `SQS` fits the AWS learning goal better
 - the system stays simpler operationally
 - Redis can be introduced later when caching or throttling becomes useful
+- `uv` gives a modern and practical standard for env, deps, lockfile, and command execution
 
 ## MVP scope
 
@@ -139,6 +143,7 @@ Important `meal_entries` fields:
 - isolate AWS integrations behind service abstractions
 - keep calorie estimation rule-based in MVP
 - store metadata that will make later ML upgrades easier
+- standardize local Python workflow around `uv`, `pyproject.toml`, and a project-local `.venv`
 
 ## Current planning artifacts
 
@@ -146,6 +151,7 @@ Primary docs to read next:
 - [README.md](/Users/andreylepokurov/projects/work/aws-pet-proj/README.md)
 - [repo-structure.md](/Users/andreylepokurov/projects/work/aws-pet-proj/docs/repo-structure.md)
 - [mvp-backlog.md](/Users/andreylepokurov/projects/work/aws-pet-proj/docs/mvp-backlog.md)
+- [dev-workflow.md](/Users/andreylepokurov/projects/work/aws-pet-proj/docs/dev-workflow.md)
 
 ## Immediate next step
 
@@ -154,3 +160,4 @@ The next implementation phase should continue from the current working stub MVP:
 - introduce real `S3` integration behind the storage abstraction
 - introduce real `SQS` integration behind the queue abstraction
 - keep the existing API contract stable while swapping implementations
+- keep `uv`, `pyproject.toml`, and `uv.lock` as the default local Python workflow

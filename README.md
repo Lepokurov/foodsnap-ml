@@ -15,6 +15,13 @@ Optional components for later iterations:
 - `Redis` for caching and rate limiting
 - a dedicated ML model service if the prediction layer grows in complexity
 
+Development tooling baseline:
+- `uv` for Python version management, virtual environment workflow, dependency installation, locking, and command execution
+- `pyproject.toml` as the single project configuration entrypoint
+- `uv.lock` as the committed dependency lockfile
+- `ruff` is the preferred future choice for linting and formatting
+- `pytest` for tests
+
 ## MVP goal
 
 Build a backend service that:
@@ -50,6 +57,7 @@ Detailed file-by-file project planning lives in:
 - [docs/repo-structure.md](/Users/andreylepokurov/projects/work/aws-pet-proj/docs/repo-structure.md)
 - [docs/mvp-backlog.md](/Users/andreylepokurov/projects/work/aws-pet-proj/docs/mvp-backlog.md)
 - [docs/project-context.md](/Users/andreylepokurov/projects/work/aws-pet-proj/docs/project-context.md)
+- [docs/dev-workflow.md](/Users/andreylepokurov/projects/work/aws-pet-proj/docs/dev-workflow.md)
 
 ## MVP principles
 
@@ -67,6 +75,7 @@ The repository now contains a first API implementation focused on speed of itera
 - local file storage stub under `data/uploads` instead of `S3`
 - in-memory async queue plus background worker instead of `SQS`
 - stub classifier and rule-based calorie estimator for end-to-end meal processing
+- `uv`-managed local environment and lockfile for reproducible setup
 
 Implemented API endpoints:
 - `POST /api/v1/auth/register`
@@ -80,6 +89,12 @@ Implemented API endpoints:
 Run locally:
 
 ```bash
-python3 -m pip install -e '.[dev]'
-./scripts/run-api.sh
+uv sync --extra dev
+uv run ./scripts/run-api.sh
+```
+
+Run tests locally:
+
+```bash
+uv run pytest
 ```

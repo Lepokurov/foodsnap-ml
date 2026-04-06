@@ -18,6 +18,8 @@ Implemented now:
 - `app/utils/*`
 - `tests/api/test_api.py`
 - `scripts/run-api.sh`
+- `docs/dev-workflow.md`
+- `uv.lock`
 
 Planned but not implemented yet:
 - `app/db/*`
@@ -29,6 +31,7 @@ Meaning for future threads:
 - do not assume the repo is only a plan
 - do not rescan the whole tree before making simple backend changes
 - the current code already supports a local end-to-end flow with stubs
+- local Python workflow is already standardized around `uv`
 
 ## Top-level layout
 
@@ -39,6 +42,7 @@ aws-pet-proj/
     project-context.md
     mvp-backlog.md
     repo-structure.md
+    dev-workflow.md
   app/
     main.py
     api/
@@ -89,6 +93,7 @@ aws-pet-proj/
     uploads/
   .env.example
   pyproject.toml
+  uv.lock
 ```
 
 ## File-by-file intent
@@ -104,6 +109,9 @@ Execution-oriented backlog. It should contain milestones, feature slices, and ac
 
 ### `docs/repo-structure.md`
 This file. It defines intended responsibility boundaries and highlights what already exists.
+
+### `docs/dev-workflow.md`
+Explains the chosen Python tooling standard, including `uv`, local environment expectations, and command conventions.
 
 ## Application files
 
@@ -271,6 +279,9 @@ Example environment variables for local development.
 
 ### `pyproject.toml`
 Python project configuration, dependencies, and tool settings.
+
+### `uv.lock`
+Resolved dependency lockfile managed by `uv`.
 
 ### `alembic.ini`
 Alembic configuration file.
