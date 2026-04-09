@@ -1,0 +1,320 @@
+{
+  "info": {
+    "_postman_id": "a4c6fe92-171f-4fd5-a9d3-b1c6c245b8b5",
+    "name": "FoodSnap ML",
+    "description": "Current local stub MVP API for FoodSnap ML. Includes auth, health, meals, and daily summary endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api/v1"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "meal_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Returns local service health and currently active stub integrations."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('access_token', data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"supersecret\",\n  \"full_name\": \"Food Tester\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Creates a new user and stores the returned bearer token into the collection variable."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('access_token', data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"supersecret\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates an existing user and stores the returned bearer token into the collection variable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Meals",
+      "item": [
+        {
+          "name": "Upload Meal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('meal_id', data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Choose a local file before sending. Filenames like pizza-lunch.jpg or salad.jpg help the current stub classifier."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/meals",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "meals"
+              ]
+            },
+            "description": "Uploads a meal photo and stores the returned meal id into the collection variable."
+          },
+          "response": []
+        },
+        {
+          "name": "List Meals",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/meals",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "meals"
+              ]
+            },
+            "description": "Returns all current user's meals."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Meal By Id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/meals/{{meal_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "meals",
+                "{{meal_id}}"
+              ]
+            },
+            "description": "Returns one meal by id. Use after Upload Meal."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Summary",
+      "item": [
+        {
+          "name": "Daily Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/summary/daily",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "summary",
+                "daily"
+              ]
+            },
+            "description": "Returns the current day's summary for the authenticated user."
+          },
+          "response": []
+        },
+        {
+          "name": "Daily Summary By Date",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/summary/daily?requested_date=2026-04-06",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "summary",
+                "daily"
+              ],
+              "query": [
+                {
+                  "key": "requested_date",
+                  "value": "2026-04-06"
+                }
+              ]
+            },
+            "description": "Returns summary for a specific date. Format: YYYY-MM-DD."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
