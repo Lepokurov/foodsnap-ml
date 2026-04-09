@@ -71,7 +71,7 @@ Detailed file-by-file project planning lives in:
 
 The repository now contains a first API implementation focused on speed of iteration:
 - `FastAPI` application scaffold under `app/`
-- in-memory persistence instead of `PostgreSQL`
+- `PostgreSQL` persistence for users, meals, predictions, and food reference data
 - local file storage stub under `data/uploads` instead of `S3`
 - in-memory async queue plus background worker instead of `SQS`
 - stub classifier and rule-based calorie estimator for end-to-end meal processing
@@ -89,9 +89,76 @@ Implemented API endpoints:
 Run locally:
 
 ```bash
+createdb foodsnap_ml
 uv sync --extra dev
+uv run ./scripts/migrate.sh
 uv run ./scripts/run-api.sh
 ```
+
+The default local setup expects PostgreSQL running on your current machine and uses the local database `foodsnap_ml` through the default socket connection.
+
+Environment setup:
+
+```bash
+cp .env.example .env
+```
+
+`docker-compose.yml` is kept in the repo as an optional fallback, but local-on-machine PostgreSQL is the primary development path for now.
+
+## Local PostgreSQL setup
+
+Recommended local database contract:
+- local database name: `foodsnap_ml`
+- connection string: `postgresql+psycopg:///foodsnap_ml`
+- authentication: default local PostgreSQL user and socket connection
+
+Suggested one-time setup order:
+
+```bash
+createdb foodsnap_ml
+cp .env.example .env
+uv sync --extra dev
+uv run ./scripts/migrate.sh
+```
+
+Verify the schema:
+
+```bash
+psql -d foodsnap_ml -c '\dt'
+```
+
+## Alembic workflow
+
+Important note:
+- `Alembic` is already initialized in this repository
+- you do not need to run `alembic init` for normal work
+- for day-to-day development, only create new revisions and apply them
+
+Create a new migration after model changes:
+
+```bash
+uv run alembic revision --autogenerate -m "describe change"
+```
+
+Apply migrations:
+
+```bash
+uv run alembic upgrade head
+```
+
+Rollback one step:
+
+```bash
+uv run alembic downgrade -1
+```
+
+If you specifically want to see the manual initialization command for a brand-new repo, it would be:
+
+```bash
+uv run alembic init migrations
+```
+
+For this project, that step has already been done and the generated files are committed.
 
 Run tests locally:
 

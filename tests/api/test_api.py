@@ -10,6 +10,7 @@ def test_healthcheck() -> None:
         response = client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+    assert response.json()["database"] == "connected"
 
 
 def test_auth_upload_and_summary_flow() -> None:

@@ -11,9 +11,12 @@ class Settings:
     secret_key: str = getenv("SECRET_KEY", "dev-secret-key")
     access_token_ttl_minutes: int = int(getenv("ACCESS_TOKEN_TTL_MINUTES", "1440"))
     local_upload_dir: Path = Path(getenv("LOCAL_UPLOAD_DIR", "data/uploads"))
+    database_url: str = getenv(
+        "DATABASE_URL",
+        "postgresql+psycopg:///foodsnap_ml",
+    )
 
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

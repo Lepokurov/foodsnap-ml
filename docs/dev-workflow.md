@@ -39,10 +39,85 @@ Recommended rule:
 Current default commands:
 
 ```bash
+createdb foodsnap_ml
+cp .env.example .env
 uv sync --extra dev
+uv run ./scripts/migrate.sh
 uv run ./scripts/run-api.sh
 uv run pytest
 ```
+
+Local database standard for the current phase:
+- run `PostgreSQL` directly on the development machine
+- use the local database `foodsnap_ml`
+- connect through `DATABASE_URL=postgresql+psycopg:///foodsnap_ml`
+
+One-time bootstrap if the database does not exist yet:
+
+```bash
+createdb foodsnap_ml
+```
+
+Check that PostgreSQL is reachable locally:
+
+```bash
+pg_isready -h localhost -p 5432
+psql -d postgres -Atc "select current_database(), current_user;"
+```
+
+Project environment file:
+
+```bash
+cp .env.example .env
+```
+
+Default database URL used by the app:
+
+```bash
+DATABASE_URL=postgresql+psycopg:///foodsnap_ml
+```
+
+Apply schema to the local database:
+
+```bash
+uv run ./scripts/migrate.sh
+```
+
+Inspect created tables:
+
+```bash
+psql -d foodsnap_ml -c '\dt'
+```
+
+## Alembic commands
+
+Current repository state:
+- `Alembic` is already initialized
+- `alembic.ini` and `migrations/` are already committed
+- do not run `alembic init` again in this repo
+
+Normal migration workflow:
+
+```bash
+uv run alembic revision --autogenerate -m "describe change"
+uv run alembic upgrade head
+```
+
+Useful extra commands:
+
+```bash
+uv run alembic current
+uv run alembic history
+uv run alembic downgrade -1
+```
+
+If you want the initialization command only as reference for a fresh repo from zero:
+
+```bash
+uv run alembic init migrations
+```
+
+That command is informational here; it should not be rerun in the current repository.
 
 Later, after linting is added:
 
@@ -55,11 +130,12 @@ uv run ruff format .
 
 The intended split is:
 - `uv` for Python application workflow
-- local infrastructure through `Docker Compose` when `PostgreSQL` and other services are introduced
+- local `PostgreSQL` running directly on the machine during the current debugging-heavy phase
+- `Docker Compose` later when local infrastructure needs to be containerized
 - Docker images for deployment to `ECS Fargate`
 
 This means local development should eventually look like:
-1. infrastructure starts via `Docker Compose`
+1. local database is available
 2. application code runs through `uv run`
 3. tests also run through `uv run`
 

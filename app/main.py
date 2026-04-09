@@ -8,6 +8,7 @@ from app.api.routes.meals import router as meals_router
 from app.api.routes.summary import router as summary_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.db.session import initialize_database
 from app.services.queue import queue_service
 from app.workers.meal_analysis_worker import meal_analysis_worker
 
@@ -15,6 +16,7 @@ from app.workers.meal_analysis_worker import meal_analysis_worker
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     configure_logging()
+    initialize_database()
     worker_task = queue_service.start_worker(meal_analysis_worker.run_forever)
     try:
         yield
@@ -35,4 +37,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-

@@ -17,8 +17,8 @@ class MealAnalysisWorker:
                 meal_analysis_service.process_meal(meal_id)
                 logger.info("Processed meal %s", meal_id)
             except Exception:
+                meal_analysis_service._meals.mark_failed(meal_id)
                 logger.exception("Meal processing failed for %s", meal_id)
 
 
 meal_analysis_worker = MealAnalysisWorker()
-

@@ -27,11 +27,34 @@ def create_access_token(user_id: str) -> str:
     expires_at = datetime.now(timezone.utc) + timedelta(
         minutes=settings.access_token_ttl_minutes
     )
+    expires_at_ts = int(expires_at.timestamp())
     random_part = secrets.token_urlsafe(24)
     signature = hmac.new(
         settings.secret_key.encode("utf-8"),
-        f"{user_id}:{random_part}:{expires_at.isoformat()}".encode("utf-8"),
+        f"{user_id}:{random_part}:{expires_at_ts}".encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
-    return f"{user_id}.{int(expires_at.timestamp())}.{random_part}.{signature}"
+    return f"{user_id}.{expires_at_ts}.{random_part}.{signature}"
 
+
+def parse_access_token(token: str) -> str | None:
+    try:
+        user_id, expires_at_raw, random_part, signature = token.split(".", maxsplit=3)
+    except ValueError:
+        return None
+
+    settings = get_settings()
+    expires_at_ts = int(expires_at_raw)
+    expires_at = datetime.fromtimestamp(expires_at_ts, tz=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
+        return None
+
+    expected_signature = hmac.new(
+        settings.secret_key.encode("utf-8"),
+        f"{user_id}:{random_part}:{expires_at_ts}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    if not hmac.compare_digest(signature, expected_signature):
+        return None
+
+    return user_id
