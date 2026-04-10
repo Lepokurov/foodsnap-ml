@@ -4,7 +4,7 @@ This file is a durable short-form briefing for future threads. It is meant to be
 
 ## Current status
 
-As of `2026-04-06`, the repository is no longer empty.
+As of `2026-04-10`, the repository contains a working local MVP with real local `PostgreSQL` persistence.
 
 Implemented locally:
 - `FastAPI` app scaffold
@@ -12,16 +12,20 @@ Implemented locally:
 - protected meal endpoints: upload, list, detail
 - daily summary endpoint
 - background meal processing flow
+- `PostgreSQL` persistence for users, meals, predictions, and food reference data
+- `SQLAlchemy` models and repository layer under `app/db/*`
+- `Alembic` migrations under `migrations/*`
+- local database health check in `GET /api/v1/health`
 - stub classifier and rule-based calorie estimation
 - `uv` workflow with committed `uv.lock` and project-local `.venv`
 
 Current temporary replacements:
-- `PostgreSQL` -> in-memory store
 - `S3` -> local file storage in `data/uploads`
 - `SQS` -> in-memory async queue
 
 Important note for future threads:
 - the API pipeline works end-to-end locally
+- persistence is no longer in-memory; use the local `foodsnap_ml` PostgreSQL database
 - current goal is not scaffolding anymore
 - next work should build on the existing code, not recreate structure from scratch
 - local Python setup should use `uv sync` and `uv run`, not ad-hoc `pip`
@@ -53,7 +57,8 @@ The selected implementation path is the practical AWS-first version:
 Current decision:
 - do not use `RabbitMQ` in MVP
 - do not require `Redis` in MVP
-- use local stubs first before wiring real AWS services and database
+- use local `PostgreSQL` directly on the development machine for debugging
+- keep local stubs for `S3` and `SQS` until those integrations are introduced
 - use `uv` as the standard Python workflow tool
 
 Reasoning:
@@ -68,7 +73,7 @@ Included:
 - user registration and login
 - upload food photo
 - store image in `S3` or local stub during development
-- create meal entry in `PostgreSQL` or in-memory stub during development
+- create meal entry in local `PostgreSQL`
 - process meal asynchronously through a worker
 - store recognized label, confidence, and estimated calories
 - fetch meal history
@@ -105,19 +110,48 @@ Components:
 - `SQS` for background jobs in target architecture
 
 Current local implementation:
-- in-memory state for users, meals, predictions, and food reference data
+- local `PostgreSQL` stores users, meals, predictions, and food reference data
 - local file storage stub for uploaded images
 - in-memory queue plus background task worker
 
 Flow:
 1. user uploads a meal photo
-2. API stores image in `S3`
-3. API creates a `meal_entry` with status `pending`
-4. API sends a task to `SQS`
+2. API stores image in local file storage during development
+3. API creates a `meal_entry` in `PostgreSQL` with status `pending`
+4. API sends a task to the in-memory queue
 5. worker consumes the task
 6. worker runs recognition and calorie estimation
-7. worker updates the meal record
+7. worker updates the meal record and prediction metadata in `PostgreSQL`
 8. user reads meal history and daily summary
+
+## Local run
+
+The current local database contract:
+- database name: `foodsnap_ml`
+- default connection string: `postgresql+psycopg:///foodsnap_ml`
+- local machine `PostgreSQL`, not Docker, is the primary debug setup
+
+Bootstrap and run:
+
+```bash
+createdb foodsnap_ml
+cp .env.example .env
+uv sync --extra dev
+uv run ./scripts/migrate.sh
+uv run ./scripts/run-api.sh
+```
+
+Verify database schema:
+
+```bash
+psql -d foodsnap_ml -c '\dt'
+```
+
+Run tests:
+
+```bash
+uv run pytest
+```
 
 ## Data model summary
 
@@ -155,8 +189,7 @@ Primary docs to read next:
 
 ## Immediate next step
 
-The next implementation phase should continue from the current working stub MVP:
-- replace in-memory persistence with database repositories
+The next implementation phase should continue from the current working local-Postgres MVP:
 - introduce real `S3` integration behind the storage abstraction
 - introduce real `SQS` integration behind the queue abstraction
 - keep the existing API contract stable while swapping implementations

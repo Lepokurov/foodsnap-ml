@@ -72,6 +72,7 @@ Detailed file-by-file project planning lives in:
 The repository now contains a first API implementation focused on speed of iteration:
 - `FastAPI` application scaffold under `app/`
 - `PostgreSQL` persistence for users, meals, predictions, and food reference data
+- `Alembic` migration baseline for schema evolution
 - local file storage stub under `data/uploads` instead of `S3`
 - in-memory async queue plus background worker instead of `SQS`
 - stub classifier and rule-based calorie estimator for end-to-end meal processing
@@ -90,6 +91,7 @@ Run locally:
 
 ```bash
 createdb foodsnap_ml
+cp .env.example .env
 uv sync --extra dev
 uv run ./scripts/migrate.sh
 uv run ./scripts/run-api.sh

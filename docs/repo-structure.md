@@ -1,36 +1,39 @@
 # Repository Structure
 
-This document describes the planned repository layout for the first implementation stage. It is intentionally written before code exists so the project can be built with clear boundaries.
+This document describes the current repository layout and the intended responsibility boundaries.
 
 ## Current reality
 
-The repository already contains a working local stub MVP.
+The repository contains a working local MVP with local `PostgreSQL` persistence.
 
 Implemented now:
 - `app/main.py`
 - `app/api/routes/*`
 - `app/api/deps/*`
 - `app/core/*`
+- `app/db/*`
 - `app/schemas/*`
 - `app/services/*`
 - `app/workers/meal_analysis_worker.py`
 - `app/ml/*`
 - `app/utils/*`
+- `migrations/*`
 - `tests/api/test_api.py`
+- `tests/conftest.py`
 - `scripts/run-api.sh`
+- `scripts/migrate.sh`
 - `docs/dev-workflow.md`
 - `uv.lock`
 
 Planned but not implemented yet:
-- `app/db/*`
-- `migrations/*`
 - `infra/*`
 - `docker/*`
 
 Meaning for future threads:
 - do not assume the repo is only a plan
 - do not rescan the whole tree before making simple backend changes
-- the current code already supports a local end-to-end flow with stubs
+- the current code already supports a local end-to-end flow with `PostgreSQL`
+- local file storage and in-memory queue are still stubs
 - local Python workflow is already standardized around `uv`
 
 ## Top-level layout
@@ -58,6 +61,18 @@ aws-pet-proj/
       config.py
       security.py
       logging.py
+    db/
+      base.py
+      session.py
+      models/
+        user.py
+        meal_entry.py
+        meal_prediction.py
+        food_reference.py
+      repositories/
+        users.py
+        meals.py
+        summaries.py
     schemas/
       auth.py
       meal.py
@@ -89,8 +104,10 @@ aws-pet-proj/
   scripts/
     run-api.sh
     run-worker.sh
+    migrate.sh
   data/
     uploads/
+  alembic.ini
   .env.example
   pyproject.toml
   uv.lock
@@ -116,7 +133,7 @@ Explains the chosen Python tooling standard, including `uv`, local environment e
 ## Application files
 
 ### `app/main.py`
-FastAPI entrypoint. Will initialize the application, register routers, and connect startup/shutdown hooks.
+FastAPI entrypoint. Initializes the application, registers routers, seeds local database reference data, and starts/stops the in-memory worker loop.
 
 ### `app/api/routes/auth.py`
 Authentication endpoints such as register and login.
@@ -128,7 +145,7 @@ Endpoints for photo upload, meal retrieval, meal details, and manual meal correc
 Endpoints that return daily calorie summaries and meal aggregates.
 
 ### `app/api/routes/health.py`
-Health and readiness checks for local runs and deployment environments.
+Health and readiness checks for local runs and deployment environments. It includes a live database connectivity check.
 
 ### `app/api/deps/auth.py`
 Reusable authentication dependencies, such as current-user resolution.
@@ -158,19 +175,19 @@ Pydantic schemas for summary endpoints.
 Shared response envelopes, pagination schemas, and common API models.
 
 ### `app/services/auth.py`
-Business logic for registration and login flows.
+Business logic for registration and login flows backed by the user repository.
 
 ### `app/services/meal_ingestion.py`
-Coordinates upload flow: persist record, store image, enqueue background task.
+Coordinates upload flow: stores image locally, persists the meal record in `PostgreSQL`, and enqueues a background task.
 
 ### `app/services/meal_analysis.py`
-Coordinates prediction logic and persistence of recognition results.
+Coordinates prediction logic and persists recognition results in `PostgreSQL`.
 
 ### `app/services/calorie_estimator.py`
-Converts recognized dish labels into approximate calorie estimates using reference data and simple rules.
+Converts recognized dish labels into approximate calorie estimates using the `food_reference` table.
 
 ### `app/services/summary.py`
-Computes and formats daily calorie summaries.
+Computes and formats daily calorie summaries through aggregate database queries.
 
 ### `app/services/storage.py`
 Abstraction over file storage. Right now it writes to local disk as a stub and should later switch to `S3`.
@@ -179,7 +196,7 @@ Abstraction over file storage. Right now it writes to local disk as a stub and s
 Queue abstraction for sending meal-analysis tasks. Right now it uses an in-memory async queue and should later switch to `SQS`.
 
 ### `app/workers/meal_analysis_worker.py`
-Background worker process that consumes queued jobs, loads images, runs recognition, estimates calories, and updates stub state.
+Background worker process that consumes queued jobs, loads images, runs recognition, estimates calories, and updates `PostgreSQL`.
 
 ### `app/ml/classifier.py`
 Recognition entrypoint. The current version is a placeholder heuristic classifier based on filename patterns.
@@ -193,15 +210,13 @@ Date and timezone helpers, especially for daily summaries.
 ### `app/utils/ids.py`
 Optional helper utilities for object keys and internal identifiers.
 
-## Planned next files
-
-These are still expected later and are not implemented yet.
+## Database files
 
 ### `app/db/base.py`
 Base SQLAlchemy metadata import point for models and migrations.
 
 ### `app/db/session.py`
-Database engine and session management.
+Database engine, session management, local schema bootstrap helpers, reference-data seeding, and database connectivity checks.
 
 ### `app/db/models/user.py`
 Database model for users.

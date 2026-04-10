@@ -13,14 +13,18 @@ The focus is an end-to-end backend MVP, not maximum prediction accuracy.
 
 ## Current implementation snapshot
 
-Already done in local stub form:
+Already done:
 - FastAPI project skeleton
 - environment-based config
 - basic logging
-- health endpoint
+- health endpoint with live database connectivity check
 - registration and login
 - bearer-token protected meal and summary endpoints
 - meal upload with local file persistence
+- local `PostgreSQL` persistence for users, meals, predictions, and food reference data
+- `SQLAlchemy` models and repository layer
+- `Alembic` migration baseline
+- seeded `food_reference` data
 - in-memory async queue and background worker
 - stub dish recognition
 - rule-based calorie estimation
@@ -28,8 +32,6 @@ Already done in local stub form:
 - basic API smoke tests
 
 Still not done:
-- real `PostgreSQL`
-- migrations
 - real `S3`
 - real `SQS`
 - Docker and infra baseline
@@ -57,9 +59,9 @@ Acceptance criteria:
 - health endpoint reports a healthy application state
 
 Current status:
-- partially complete
-- local app, config, logging, and health endpoint exist
-- real database and migrations are still pending
+- complete for local development
+- local app, config, logging, health endpoint, `PostgreSQL`, and migrations exist
+- production `RDS PostgreSQL` configuration is still pending
 
 ## Milestone 2. Authentication
 
@@ -78,7 +80,7 @@ Acceptance criteria:
 - user-specific data is isolated by user identity
 
 Current status:
-- complete in stub form
+- complete with local `PostgreSQL` persistence
 
 ## Milestone 3. Meal Upload Flow
 
@@ -98,8 +100,8 @@ Acceptance criteria:
 - the response contains enough data to poll or fetch the meal later
 
 Current status:
-- complete in stub form
-- local storage and in-memory meal records are used instead of `S3` and `PostgreSQL`
+- complete with local storage and local `PostgreSQL`
+- local storage is still used instead of `S3`
 
 ## Milestone 4. Asynchronous Processing
 
@@ -121,6 +123,7 @@ Acceptance criteria:
 Current status:
 - complete in stub form
 - in-memory queue replaces `SQS`
+- meal status updates are persisted in `PostgreSQL`
 
 ## Milestone 5. Dish Recognition
 
@@ -138,7 +141,7 @@ Acceptance criteria:
 - prediction metadata is stored for future debugging and model iteration
 
 Current status:
-- complete in stub form
+- complete with persisted prediction metadata
 - classifier is filename-based heuristic logic for now
 
 Notes:
@@ -161,7 +164,7 @@ Acceptance criteria:
 - the estimation logic is deterministic and inspectable
 
 Current status:
-- complete in stub form
+- complete with seeded `food_reference` table
 
 Notes:
 - portion estimation from photo alone is out of scope for the first MVP
@@ -183,7 +186,7 @@ Acceptance criteria:
 - a user can request a daily summary with total estimated calories
 
 Current status:
-- complete in stub form
+- complete with queries backed by `PostgreSQL`
 
 ## Milestone 8. Deployment Baseline
 
@@ -226,10 +229,8 @@ Current status:
 
 ## Suggested implementation order
 
-1. foundation
-2. replace in-memory user and meal persistence with database repositories
-3. add migrations and schema
-4. swap local storage stub for real `S3` integration
-5. swap in-memory queue for real `SQS`
-6. keep worker flow and API contract stable during integration swap
-7. add containerization and AWS deployment baseline
+1. foundation with local `PostgreSQL` and migrations
+2. swap local storage stub for real `S3` integration
+3. swap in-memory queue for real `SQS`
+4. keep worker flow and API contract stable during integration swap
+5. add containerization and AWS deployment baseline
