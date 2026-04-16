@@ -112,6 +112,8 @@ The food-reference import consumer microservice in `consumers/food_reference_imp
 Current meal classifier behavior:
 - `MEAL_CLASSIFIER_BACKEND=stub` reads the loaded image metadata and uses filename keywords for local development
 - `MEAL_CLASSIFIER_BACKEND=aws_rekognition` sends an S3 object reference to AWS Rekognition when S3 bucket/key are available, otherwise sends image bytes
+- classifiers return candidate labels with confidence values
+- calorie estimation resolves candidates against `food_reference` and falls back to `unknown` when none of the candidates are known
 
 ## Why queue is needed
 

@@ -95,7 +95,6 @@ aws-pet-proj/
       queue.py
     ml/
       classifier.py
-      label_mapping.py
     utils/
       datetime.py
       ids.py
@@ -216,7 +215,7 @@ Coordinates upload flow: stores image through the injected storage backend, pers
 Coordinates prediction logic and persists recognition results through injected repository and calorie-estimator dependencies.
 
 ### `app/services/calorie_estimator.py`
-Converts recognized dish labels into approximate calorie estimates using the `food_reference` table and an injected SQLAlchemy `Session`.
+Resolves classifier candidate labels against `food_reference` and converts the resolved label into an approximate calorie estimate using an injected SQLAlchemy `Session`.
 
 ### `app/services/summary.py`
 Computes and formats daily calorie summaries through an injected summary repository.
@@ -250,10 +249,7 @@ Builds the deployable image for the meal-analysis consumer microservice.
 Builds the deployable image for the food-reference import consumer microservice.
 
 ### `app/ml/classifier.py`
-Recognition entrypoint. The current version is a placeholder heuristic classifier based on filename patterns.
-
-### `app/ml/label_mapping.py`
-Maps raw classifier output into normalized internal dish labels.
+Recognition entrypoint. Supports a filename-based stub backend for local tests and an AWS Rekognition backend for AWS-backed runs. Classifiers return ordered candidate labels with confidence values; downstream services resolve them through `food_reference`.
 
 ### `app/utils/datetime.py`
 Date and timezone helpers, especially for daily summaries.

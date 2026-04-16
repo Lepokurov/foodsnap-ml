@@ -79,7 +79,8 @@ The repository now contains a first API implementation focused on speed of itera
 - switchable storage backend: local files for development and S3 for AWS runs
 - RabbitMQ publisher for meal-analysis and food-reference import tasks
 - RabbitMQ consumer microservices under `consumers/`
-- stub classifier and rule-based calorie estimator for end-to-end meal processing
+- switchable meal classifier: filename-based stub for local tests or AWS Rekognition for AWS-backed runs
+- DB-backed food label resolution and rule-based calorie estimation through `food_reference`
 - `uv`-managed local environment and lockfile for reproducible setup
 
 Current status:
@@ -87,6 +88,8 @@ Current status:
 - the API owns auth, meal upload, history, summary, PostgreSQL writes, and RabbitMQ task publishing
 - the API does not consume RabbitMQ tasks
 - meal analysis and food-reference importing are implemented as separate RabbitMQ consumer microservices under `consumers/`
+- AWS-backed upload and recognition works through S3 plus Rekognition when the relevant env vars and IAM permissions are configured
+- the main remaining data task is expanding `food_reference` with enough labels and calorie estimates for the foods Rekognition commonly returns
 
 Implemented API endpoints:
 - `POST /api/v1/auth/register`
@@ -222,11 +225,10 @@ Remaining API-side work:
 - add RabbitMQ connectivity to health/readiness checks
 - consider an outbox pattern for stronger DB plus queue consistency
 - restrict food-reference imports to admin/internal users later
-- configure real AWS bucket/IAM/lifecycle rules for S3 environments
 
 Next major work outside the HTTP API:
 - add production retry/dead-letter handling for the consumer microservices
-- replace stub food-reference imports with real provider calls
+- expand and curate `food_reference` using USDA FoodData Central import jobs
 - add deployment infrastructure for API, workers, database, broker, and storage
 
 ## Storage Workflow
@@ -252,3 +254,21 @@ AWS_SESSION_TOKEN=
 The S3 backend stores uploads through `boto3` and saves meal image URLs as `s3://bucket/key`, which the meal-analysis consumer can later load.
 
 For the current pet-project setup, local AWS credentials can live in the ignored `.env` file. Keep `AWS_SESSION_TOKEN` empty for long-lived IAM user keys, or fill it when using temporary session credentials. For production-style ECS runs, prefer task roles instead of static access keys.
+
+## Recognition and Food Reference Workflow
+
+Local runs can keep using:
+
+```text
+MEAL_CLASSIFIER_BACKEND=stub
+```
+
+AWS-backed recognition uses:
+
+```text
+MEAL_CLASSIFIER_BACKEND=aws_rekognition
+```
+
+The Rekognition classifier returns all detected labels as candidates. `CalorieEstimatorService` then resolves those candidates against `food_reference` with a database query, preserving the candidate order returned by Rekognition. If none of the candidates exist in `food_reference`, the meal falls back to `unknown`.
+
+The initial seed data is intentionally small: burger, pizza, salad, pasta, sushi, steak, soup, banana, and unknown. The next useful data step is to import or curate more `food_reference` rows for common Rekognition labels.

@@ -30,23 +30,25 @@ Already done:
 - RabbitMQ consumer microservices for meal analysis and food-reference imports
 - Dockerfiles for both consumer images
 - stub dish recognition
+- AWS Rekognition classifier backend
+- DB-backed label resolution from classifier candidates into `food_reference`
 - rule-based calorie estimation
 - meal history, meal detail, and daily summary
 - basic API and consumer smoke tests
 
 Still not done:
 - API Dockerfile
-- real food-data provider clients for the import consumer
+- broad curated `food_reference` coverage
 - deployment infra baseline beyond local Compose
 
 Current status summary:
 - main API producer side is functionally complete for the current MVP architecture
 - consumer microservice entrypoints are implemented in this repository
-- remaining work is mostly storage, deployment, real provider integration, health/observability, and security hardening
+- remaining work is mostly food-reference data coverage, deployment, health/observability, and security hardening
 
 Recommended rule for future threads:
 - treat milestones `1` to `7` as functionally prototyped
-- when continuing MVP work, prefer replacing stubs with real integrations over adding parallel duplicate code
+- when continuing MVP work, prefer expanding the existing provider/import and classifier flows over adding parallel duplicate code
 
 ## Milestone 1. Foundation
 
@@ -108,8 +110,8 @@ Acceptance criteria:
 - the response contains enough data to poll or fetch the meal later
 
 Current status:
-- complete with local storage and local `PostgreSQL`
-- local storage is still used instead of `S3`
+- complete with local storage or S3, depending on `STORAGE_BACKEND`
+- S3-backed upload works when bucket, region, and credentials are configured
 
 ## Milestone 4. Asynchronous Processing
 
@@ -133,7 +135,7 @@ Acceptance criteria:
 Current status:
 - complete for API-side publishing
 - RabbitMQ publisher exists in this API service
-- external consumer microservice is still pending
+- external RabbitMQ consumer microservice exists under `consumers/meal_analysis`
 - meal status updates are persisted in `PostgreSQL` by processing logic
 
 ## Milestone 5. Dish Recognition
@@ -153,7 +155,8 @@ Acceptance criteria:
 
 Current status:
 - complete with persisted prediction metadata
-- classifier is filename-based heuristic logic for now
+- classifier backend is switchable between filename-based stub and AWS Rekognition
+- Rekognition labels are returned as candidates and resolved through `food_reference`
 
 Notes:
 - initial implementation may use a placeholder recognizer or lightweight pre-trained integration
@@ -175,7 +178,8 @@ Acceptance criteria:
 - the estimation logic is deterministic and inspectable
 
 Current status:
-- complete with seeded `food_reference` table
+- complete with seeded `food_reference` table and DB-backed candidate matching
+- still needs broader `food_reference` coverage for realistic foods
 
 Notes:
 - portion estimation from photo alone is out of scope for the first MVP
@@ -241,8 +245,8 @@ Current status:
 ## Suggested implementation order
 
 1. foundation with local `PostgreSQL` and migrations
-2. configure real AWS S3 bucket/IAM/lifecycle rules for AWS-backed environments
-3. replace the food-reference import stub with real provider clients
+2. expand `food_reference` with common Rekognition labels and USDA-backed calorie estimates
+3. add retry/dead-letter handling for consumers
 4. add API containerization and deployment baseline
-5. add retry/dead-letter handling for consumers
+5. configure production-style AWS roles, lifecycle rules, and deployment infrastructure
 6. add stronger consistency and observability patterns when needed

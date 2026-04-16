@@ -32,6 +32,27 @@ Current implementation:
 - `FoodReferenceImportService` averages returned kcal candidates for each label
 - labels with no external kcal candidates are skipped instead of receiving fake fallback values
 
+## Current food-reference gap
+
+Recognition now returns candidates from AWS Rekognition and resolves them through `food_reference`. This means the most useful next data task is not another classifier path; it is filling `food_reference` with the labels that Rekognition commonly emits.
+
+The initial seed set is deliberately small:
+
+```text
+burger, pizza, salad, pasta, sushi, steak, soup, banana, unknown
+```
+
+Recommended next labels to import or curate:
+
+```text
+apple, orange, sandwich, bread, cake, cookie, donut, fries, rice, noodles,
+egg, chicken, fish, meat, cheese, vegetable, fruit, potato, tomato, avocado
+```
+
+Use `POST /api/v1/food-reference/imports` with `source=usda_fdc`, `mode=upsert`, and a small `limit_per_label` first. Review imported calorie values before trusting them broadly, because generic labels can map to different serving assumptions.
+
+For labels that USDA resolves poorly or too broadly, manually curated rows in `food_reference` are acceptable for the MVP as long as they stay approximate and transparent.
+
 ## Secondary provider candidate: Open Food Facts
 
 Use `open_food_facts` later, mainly for packaged or branded products. It is documented as a future candidate and is not currently accepted by the API contract.

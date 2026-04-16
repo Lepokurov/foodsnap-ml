@@ -21,11 +21,13 @@ Implemented locally:
 - meal-analysis RabbitMQ consumer under `consumers/meal_analysis`
 - food-reference import RabbitMQ consumer under `consumers/food_reference_import`
 - Dockerfiles for both consumer images under `docker/`
-- stub classifier and rule-based calorie estimation
+- switchable meal classification with local stub or AWS Rekognition
+- DB-backed candidate label resolution through `food_reference`
+- rule-based calorie estimation from `food_reference`
 - `uv` workflow with committed `uv.lock` and project-local `.venv`
 
 Current temporary replacements:
-- real nutrition provider calls -> deterministic local food-reference import stub
+- broad nutrition coverage -> small seeded `food_reference` table plus on-demand USDA imports
 
 Important note for future threads:
 - the API pipeline works end-to-end locally
@@ -41,7 +43,7 @@ API-side work still worth doing:
 - add RabbitMQ connectivity to health/readiness checks
 - consider an outbox pattern for stronger DB plus queue consistency
 - restrict food-reference imports to admin/internal users later
-- configure real AWS bucket/IAM/lifecycle rules for S3 environments
+- harden AWS bucket/IAM/lifecycle rules for production-style S3 environments
 
 ## Project
 
@@ -73,6 +75,7 @@ Current decision:
 - do not require `Redis` in MVP
 - use local `PostgreSQL` directly on the development machine for debugging
 - use `STORAGE_BACKEND=local` for local development and `STORAGE_BACKEND=s3` for AWS-backed upload storage
+- use `MEAL_CLASSIFIER_BACKEND=stub` for local filename-based tests and `MEAL_CLASSIFIER_BACKEND=aws_rekognition` for AWS-backed recognition
 - use `uv` as the standard Python workflow tool
 
 Reasoning:
@@ -92,6 +95,7 @@ Included:
 - publish food-reference import task to `RabbitMQ`
 - let consumer microservices process tasks asynchronously
 - store recognized label, confidence, and estimated calories
+- resolve recognition candidates against the `food_reference` table before estimating calories
 - fetch meal history
 - fetch daily calorie summary
 
@@ -131,6 +135,7 @@ Current local implementation:
 - RabbitMQ publisher for meal-analysis and food-reference import tasks
 - no embedded consumer inside the FastAPI service
 - deployable RabbitMQ consumer entrypoints under `consumers/`
+- AWS S3 and AWS Rekognition are wired behind environment-controlled backends
 
 Flow:
 1. user uploads a meal photo
@@ -138,9 +143,10 @@ Flow:
 3. API creates a `meal_entry` in `PostgreSQL` with status `pending`
 4. API publishes a JSON task to RabbitMQ
 5. meal-analysis consumer microservice consumes the task
-6. consumer runs recognition and calorie estimation
-7. consumer updates the meal record and prediction metadata in `PostgreSQL`
-8. user reads meal history and daily summary
+6. consumer runs recognition and receives candidate labels
+7. consumer resolves candidates against `food_reference` and estimates calories
+8. consumer updates the meal record and prediction metadata in `PostgreSQL`
+9. user reads meal history and daily summary
 
 ## Local run
 
@@ -219,7 +225,7 @@ Primary docs to read next:
 ## Immediate next step
 
 The next implementation phase should continue from the current working local-Postgres MVP:
-- replace the food-reference import stub with real provider clients
+- expand `food_reference` with common foods returned by Rekognition, using USDA imports first and manual curation where needed
 - add API Dockerfile and deployment baseline
 - add retry/dead-letter handling for RabbitMQ consumers
 - keep the existing API contract stable while swapping implementations
