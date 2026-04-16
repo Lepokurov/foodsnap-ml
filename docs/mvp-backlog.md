@@ -6,7 +6,7 @@ This backlog reflects the selected MVP architecture:
 - `AWS S3`
 - `AWS RDS PostgreSQL`
 - `AWS ECS Fargate`
-- `AWS SQS`
+- `RabbitMQ`
 - `AWS CloudWatch`
 
 The focus is an end-to-end backend MVP, not maximum prediction accuracy.
@@ -25,7 +25,9 @@ Already done:
 - `SQLAlchemy` models and repository layer
 - `Alembic` migration baseline
 - seeded `food_reference` data
-- in-memory async queue and background worker
+- RabbitMQ publisher for meal-analysis tasks
+- RabbitMQ publisher for food-reference import tasks
+- external worker microservice boundary documented
 - stub dish recognition
 - rule-based calorie estimation
 - meal history, meal detail, and daily summary
@@ -33,8 +35,14 @@ Already done:
 
 Still not done:
 - real `S3`
-- real `SQS`
-- Docker and infra baseline
+- external RabbitMQ consumer microservice
+- external food-reference import worker microservice
+- Docker and infra baseline beyond local RabbitMQ compose
+
+Current status summary:
+- main API producer side is functionally complete for the current MVP architecture
+- remaining API work is mostly storage, deployment, health/observability, and security hardening
+- next major product work should move to worker microservices that consume RabbitMQ messages
 
 Recommended rule for future threads:
 - treat milestones `1` to `7` as functionally prototyped
@@ -108,22 +116,25 @@ Current status:
 Goal: decouple upload from meal analysis.
 
 Tasks:
-- send meal-analysis tasks to `SQS`
-- create a worker process that consumes tasks
+- send meal-analysis tasks to `RabbitMQ`
+- keep the API as a producer only
+- define the contract for a separate worker microservice
 - load the meal entry and image during processing
 - update meal status to `processing`, then `done` or `failed`
 - log task outcomes
 
 Acceptance criteria:
 - each upload enqueues a processing task
-- the worker can consume and process tasks
+- the API publishes a durable RabbitMQ message
+- the separate worker can consume and process tasks
 - task failures do not crash the whole service
 - meal status reflects the processing lifecycle
 
 Current status:
-- complete in stub form
-- in-memory queue replaces `SQS`
-- meal status updates are persisted in `PostgreSQL`
+- complete for API-side publishing
+- RabbitMQ publisher exists in this API service
+- external consumer microservice is still pending
+- meal status updates are persisted in `PostgreSQL` by processing logic
 
 ## Milestone 5. Dish Recognition
 
@@ -193,15 +204,15 @@ Current status:
 Goal: package the project in a way that is deployable to AWS.
 
 Tasks:
-- add Dockerfiles for API and worker
-- define infrastructure layout for `ECS`, `RDS`, `S3`, and `SQS`
+- add Dockerfile for the API
+- define infrastructure layout for `ECS`, `RDS`, `S3`, and `RabbitMQ`
 - prepare environment variable contract for cloud deployment
 - define logging flow to `CloudWatch`
 
 Acceptance criteria:
 - the app can be containerized
 - infra layout is defined clearly enough for implementation
-- deployment responsibilities of API and worker are separated
+- deployment responsibilities of API and the external worker microservice are separated
 
 Current status:
 - not started
@@ -231,6 +242,7 @@ Current status:
 
 1. foundation with local `PostgreSQL` and migrations
 2. swap local storage stub for real `S3` integration
-3. swap in-memory queue for real `SQS`
-4. keep worker flow and API contract stable during integration swap
-5. add containerization and AWS deployment baseline
+3. build the external RabbitMQ worker microservice
+4. build the external food-reference import worker microservice
+5. add API containerization and deployment baseline
+6. add stronger consistency and observability patterns when needed

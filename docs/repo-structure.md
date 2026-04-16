@@ -14,7 +14,6 @@ Implemented now:
 - `app/db/*`
 - `app/schemas/*`
 - `app/services/*`
-- `app/workers/meal_analysis_worker.py`
 - `app/ml/*`
 - `app/utils/*`
 - `migrations/*`
@@ -22,18 +21,23 @@ Implemented now:
 - `tests/conftest.py`
 - `scripts/run-api.sh`
 - `scripts/migrate.sh`
+- `docs/queue-contract.md`
 - `docs/dev-workflow.md`
 - `uv.lock`
+- `docker-compose.yml` for local RabbitMQ
 
 Planned but not implemented yet:
 - `infra/*`
 - `docker/*`
+- external worker microservice repository/application
 
 Meaning for future threads:
 - do not assume the repo is only a plan
 - do not rescan the whole tree before making simple backend changes
-- the current code already supports a local end-to-end flow with `PostgreSQL`
-- local file storage and in-memory queue are still stubs
+- the current code already supports local API flow with `PostgreSQL`
+- local file storage is still a stub
+- RabbitMQ publishing is implemented, but consuming is intentionally external
+- food-reference import task publishing is implemented, but importing is intentionally external
 - local Python workflow is already standardized around `uv`
 
 ## Top-level layout
@@ -46,6 +50,8 @@ aws-pet-proj/
     mvp-backlog.md
     repo-structure.md
     dev-workflow.md
+    queue-contract.md
+    food-data-sources.md
   app/
     main.py
     api/
@@ -86,8 +92,6 @@ aws-pet-proj/
       summary.py
       storage.py
       queue.py
-    workers/
-      meal_analysis_worker.py
     ml/
       classifier.py
       label_mapping.py
@@ -100,7 +104,6 @@ aws-pet-proj/
     api/
       test_api.py
     services/
-    workers/
   scripts/
     run-api.sh
     run-worker.sh
@@ -111,6 +114,7 @@ aws-pet-proj/
   .env.example
   pyproject.toml
   uv.lock
+  docker-compose.yml
 ```
 
 ## File-by-file intent
@@ -130,16 +134,25 @@ This file. It defines intended responsibility boundaries and highlights what alr
 ### `docs/dev-workflow.md`
 Explains the chosen Python tooling standard, including `uv`, local environment expectations, and command conventions.
 
+### `docs/queue-contract.md`
+Defines the RabbitMQ message contract between this API producer and the external meal-analysis worker microservice.
+
+### `docs/food-data-sources.md`
+Records external food/nutrition data sources for the future food-reference import worker.
+
 ## Application files
 
 ### `app/main.py`
-FastAPI entrypoint. Initializes the application, registers routers, seeds local database reference data, and starts/stops the in-memory worker loop.
+FastAPI entrypoint. Initializes the application, registers routers, seeds local database reference data, and closes queue publisher resources on shutdown.
 
 ### `app/api/routes/auth.py`
 Authentication endpoints such as register and login.
 
 ### `app/api/routes/meals.py`
 Endpoints for photo upload, meal retrieval, meal details, and manual meal correction if added later.
+
+### `app/api/routes/food_reference.py`
+Endpoint for requesting asynchronous `food_reference` imports through RabbitMQ.
 
 ### `app/api/routes/summary.py`
 Endpoints that return daily calorie summaries and meal aggregates.
@@ -149,6 +162,15 @@ Health and readiness checks for local runs and deployment environments. It inclu
 
 ### `app/api/deps/auth.py`
 Reusable authentication dependencies, such as current-user resolution.
+
+### `app/api/deps/db.py`
+FastAPI database session dependency. It wraps the lower-level `get_db_session()` context manager for request-scoped API usage.
+
+### `app/api/deps/repositories.py`
+Repository factory dependencies. They bind repositories to the request-scoped SQLAlchemy `Session`.
+
+### `app/api/deps/services.py`
+Service factory dependencies. They compose repositories and services through FastAPI dependency injection.
 
 ### `app/api/deps/common.py`
 Shared route dependencies, pagination helpers, and request-level utilities.
@@ -175,28 +197,25 @@ Pydantic schemas for summary endpoints.
 Shared response envelopes, pagination schemas, and common API models.
 
 ### `app/services/auth.py`
-Business logic for registration and login flows backed by the user repository.
+Business logic for registration and login flows. It receives its user repository through dependency injection.
 
 ### `app/services/meal_ingestion.py`
-Coordinates upload flow: stores image locally, persists the meal record in `PostgreSQL`, and enqueues a background task.
+Coordinates upload flow: stores image locally, persists the meal record through an injected repository, and publishes a RabbitMQ meal-analysis task.
 
 ### `app/services/meal_analysis.py`
-Coordinates prediction logic and persists recognition results in `PostgreSQL`.
+Coordinates prediction logic and persists recognition results through injected repository and calorie-estimator dependencies.
 
 ### `app/services/calorie_estimator.py`
-Converts recognized dish labels into approximate calorie estimates using the `food_reference` table.
+Converts recognized dish labels into approximate calorie estimates using the `food_reference` table and an injected SQLAlchemy `Session`.
 
 ### `app/services/summary.py`
-Computes and formats daily calorie summaries through aggregate database queries.
+Computes and formats daily calorie summaries through an injected summary repository.
 
 ### `app/services/storage.py`
 Abstraction over file storage. Right now it writes to local disk as a stub and should later switch to `S3`.
 
 ### `app/services/queue.py`
-Queue abstraction for sending meal-analysis tasks. Right now it uses an in-memory async queue and should later switch to `SQS`.
-
-### `app/workers/meal_analysis_worker.py`
-Background worker process that consumes queued jobs, loads images, runs recognition, estimates calories, and updates `PostgreSQL`.
+Queue abstraction for publishing meal-analysis tasks. The default backend is RabbitMQ; the in-memory backend is retained for tests.
 
 ### `app/ml/classifier.py`
 Recognition entrypoint. The current version is a placeholder heuristic classifier based on filename patterns.
@@ -216,7 +235,7 @@ Optional helper utilities for object keys and internal identifiers.
 Base SQLAlchemy metadata import point for models and migrations.
 
 ### `app/db/session.py`
-Database engine, session management, local schema bootstrap helpers, reference-data seeding, and database connectivity checks.
+Database engine, session management, local schema bootstrap helpers, reference-data seeding, and database connectivity checks. The `get_db_session()` context manager remains the shared low-level building block for API dependencies and future non-FastAPI workers.
 
 ### `app/db/models/user.py`
 Database model for users.
@@ -231,13 +250,13 @@ Database model for storing ML-related prediction metadata, model version, and ra
 Reference nutrition table for known dishes and baseline calorie estimates.
 
 ### `app/db/repositories/users.py`
-Database access helpers for user operations.
+Database access helpers for user operations. Repositories receive a SQLAlchemy `Session` from the caller and do not open sessions themselves.
 
 ### `app/db/repositories/meals.py`
-Database access helpers for meal entry CRUD and filtered reads.
+Database access helpers for meal entry CRUD and filtered reads. Repositories receive a SQLAlchemy `Session` from the caller and do not open sessions themselves.
 
 ### `app/db/repositories/summaries.py`
-Aggregate query helpers for daily summary and reporting endpoints.
+Aggregate query helpers for daily summary and reporting endpoints. Repositories receive a SQLAlchemy `Session` from the caller and do not open sessions themselves.
 
 ## Infrastructure files
 
@@ -253,9 +272,6 @@ API endpoint tests.
 ### `tests/services/`
 Service-layer tests for business logic.
 
-### `tests/workers/`
-Worker processing tests for asynchronous flows.
-
 ### `infra/terraform/environments/dev/`
 Terraform root configuration for the development environment.
 
@@ -263,7 +279,7 @@ Terraform root configuration for the development environment.
 Terraform root configuration for the production-like environment.
 
 ### `infra/terraform/modules/ecs_service/`
-Reusable ECS service definition for API and worker containers.
+Reusable ECS service definition for API containers and future related services.
 
 ### `infra/terraform/modules/rds/`
 Reusable `RDS PostgreSQL` module.
@@ -271,20 +287,17 @@ Reusable `RDS PostgreSQL` module.
 ### `infra/terraform/modules/s3/`
 Reusable `S3` bucket module for image storage.
 
-### `infra/terraform/modules/sqs/`
-Reusable `SQS` module for async tasks.
+### `infra/terraform/modules/rabbitmq/`
+Reusable RabbitMQ or broker module for async tasks if the broker is managed in this repo later.
 
 ### `docker/api.Dockerfile`
 Container build definition for the API service.
-
-### `docker/worker.Dockerfile`
-Container build definition for the background worker.
 
 ### `scripts/run-api.sh`
 Local helper script to run the API service.
 
 ### `scripts/run-worker.sh`
-Local helper script to run the background worker.
+Informational helper explaining that the worker is now a separate microservice outside this API repo.
 
 ### `scripts/migrate.sh`
 Local helper script to run migrations.
@@ -306,5 +319,7 @@ Alembic configuration file.
 - The API service should not contain heavy ML logic directly inside route handlers.
 - Background processing should be isolated in the worker layer.
 - Storage and queue integrations should be hidden behind service abstractions.
+- API database access should flow through `Depends(get_db)` into repositories and services.
+- Future external workers should use `get_db_session()` directly and manually compose repositories/services.
 - Calorie estimation should remain rule-based in MVP and become more advanced later only if needed.
 - Summary endpoints should read from canonical meal data instead of maintaining separate precomputed tables in the first version.

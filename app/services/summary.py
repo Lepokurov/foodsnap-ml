@@ -6,8 +6,8 @@ from app.schemas.summary import DailySummaryResponse
 
 
 class SummaryService:
-    def __init__(self) -> None:
-        self._summaries = SummaryRepository()
+    def __init__(self, summaries: SummaryRepository) -> None:
+        self._summaries = summaries
 
     def get_daily_summary(self, user: User, requested_date: date) -> DailySummaryResponse:
         summary = self._summaries.get_daily_summary(
@@ -20,6 +20,3 @@ class SummaryService:
             processed_meals=summary["processed_meals"],
             total_estimated_calories=summary["total_estimated_calories"],
         )
-
-
-summary_service = SummaryService()

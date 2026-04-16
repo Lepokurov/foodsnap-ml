@@ -6,16 +6,21 @@ from app.db.models.meal_entry import MealEntry
 from app.db.models.user import User
 from app.db.repositories.meals import MealRepository
 from app.schemas.meal import MealCreateResponse, MealListResponse, MealResponse
-from app.services.queue import queue_service
+from app.services.queue import QueuePublishError, QueueService
 from app.services.storage import storage_service
 from app.utils.ids import new_id
 
 
 class MealIngestionService:
-    def __init__(self) -> None:
-        self._meals = MealRepository()
+    def __init__(self, meals: MealRepository) -> None:
+        self._meals = meals
 
-    async def create_meal(self, user: User, upload: UploadFile) -> MealCreateResponse:
+    async def create_meal(
+        self,
+        user: User,
+        upload: UploadFile,
+        queue: QueueService,
+    ) -> MealCreateResponse:
         meal_id = new_id("meal")
         image_url = await storage_service.save_upload(meal_id, upload)
         timestamp = datetime.now(timezone.utc)
@@ -28,7 +33,12 @@ class MealIngestionService:
             image_storage=storage_service.storage_name,
             meal_timestamp=timestamp,
         )
-        await queue_service.enqueue_meal(meal.id)
+        try:
+            await queue.enqueue_meal(meal.id)
+        except QueuePublishError:
+            self._meals.mark_failed(meal.id)
+            raise
+
         return MealCreateResponse(
             id=meal.id,
             status=meal.status,
@@ -62,6 +72,3 @@ class MealIngestionService:
             confidence=meal.confidence,
             estimated_calories=meal.estimated_calories,
         )
-
-
-meal_ingestion_service = MealIngestionService()

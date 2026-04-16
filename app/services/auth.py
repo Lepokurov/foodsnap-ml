@@ -11,8 +11,8 @@ from app.utils.ids import new_id
 
 
 class AuthService:
-    def __init__(self) -> None:
-        self._users = UserRepository()
+    def __init__(self, users: UserRepository) -> None:
+        self._users = users
 
     def register(self, payload: RegisterRequest) -> AuthResponse:
         if self._users.get_by_email(payload.email) is not None:
@@ -45,6 +45,3 @@ class AuthService:
     @staticmethod
     def _to_schema(user: User) -> UserResponse:
         return UserResponse(id=user.id, email=user.email, full_name=user.full_name)
-
-
-auth_service = AuthService()

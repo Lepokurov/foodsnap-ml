@@ -15,6 +15,16 @@ class Settings:
         "DATABASE_URL",
         "postgresql+psycopg:///foodsnap_ml",
     )
+    queue_backend: str = getenv("QUEUE_BACKEND", "rabbitmq")
+    rabbitmq_url: str = getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
+    rabbitmq_meal_analysis_queue: str = getenv(
+        "RABBITMQ_MEAL_ANALYSIS_QUEUE",
+        "foodsnap.meal_analysis",
+    )
+    rabbitmq_food_reference_import_queue: str = getenv(
+        "RABBITMQ_FOOD_REFERENCE_IMPORT_QUEUE",
+        "foodsnap.food_reference_import",
+    )
 
 
 @lru_cache

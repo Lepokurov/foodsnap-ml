@@ -3,25 +3,24 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.routes.auth import router as auth_router
+from app.api.routes.food_reference import router as food_reference_router
 from app.api.routes.health import router as health_router
 from app.api.routes.meals import router as meals_router
 from app.api.routes.summary import router as summary_router
+from app.api.deps.queue import get_queue_service
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.db.session import initialize_database
-from app.services.queue import queue_service
-from app.workers.meal_analysis_worker import meal_analysis_worker
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     configure_logging()
     initialize_database()
-    worker_task = queue_service.start_worker(meal_analysis_worker.run_forever)
     try:
         yield
     finally:
-        await queue_service.stop_worker(worker_task)
+        await get_queue_service().close()
 
 
 def create_app() -> FastAPI:
@@ -30,6 +29,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router, prefix=settings.api_prefix)
     app.include_router(auth_router, prefix=settings.api_prefix)
+    app.include_router(food_reference_router, prefix=settings.api_prefix)
     app.include_router(meals_router, prefix=settings.api_prefix)
     app.include_router(summary_router, prefix=settings.api_prefix)
 

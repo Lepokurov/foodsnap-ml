@@ -248,6 +248,49 @@
       ]
     },
     {
+      "name": "Food Reference",
+      "item": [
+        {
+          "name": "Request Food Reference Import",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"usda_fdc\",\n  \"labels\": [\"pizza\", \"salad\", \"burger\"],\n  \"limit_per_label\": 3,\n  \"mode\": \"upsert\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/food-reference/imports",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "food-reference",
+                "imports"
+              ]
+            },
+            "description": "Queues a food_reference import task for an external RabbitMQ worker."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Summary",
       "item": [
         {

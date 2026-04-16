@@ -1,10 +1,14 @@
-from fastapi import Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 
+from app.api.deps.services import get_auth_service
 from app.db.models.user import User
-from app.services.auth import auth_service
+from app.services.auth import AuthService
 
 
-def get_current_user(authorization: str | None = Header(default=None)) -> User:
+def get_current_user(
+    authorization: str | None = Header(default=None),
+    auth: AuthService = Depends(get_auth_service),
+) -> User:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -12,7 +16,7 @@ def get_current_user(authorization: str | None = Header(default=None)) -> User:
         )
 
     token = authorization.removeprefix("Bearer ").strip()
-    user = auth_service.get_user_by_token(token)
+    user = auth.get_user_by_token(token)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

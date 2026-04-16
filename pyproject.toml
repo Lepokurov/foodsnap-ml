@@ -1,7 +1,7 @@
 [project]
 name = "foodsnap-ml"
 version = "0.1.0"
-description = "Food photo recognition MVP API with local stubs for storage and queueing."
+description = "Food photo recognition MVP API with PostgreSQL persistence and RabbitMQ task publishing."
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115.0,<1.0.0",
@@ -12,6 +12,7 @@ dependencies = [
   "sqlalchemy>=2.0.36,<3.0.0",
   "alembic>=1.14.0,<2.0.0",
   "psycopg[binary]>=3.2.0,<4.0.0",
+  "aio-pika>=9.4.0,<10.0.0",
 ]
 
 [project.optional-dependencies]

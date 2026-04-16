@@ -14,7 +14,7 @@ def healthcheck() -> dict[str, str]:
     return {
         "status": "ok" if database_ok else "degraded",
         "storage": "local_stub",
-        "queue": "in_memory",
+        "queue": settings.queue_backend,
         "persistence": "postgres" if "postgres" in settings.database_url else "sqlite",
         "database": "connected" if database_ok else "unavailable",
     }
