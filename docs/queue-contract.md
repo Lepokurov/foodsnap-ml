@@ -72,7 +72,7 @@ Fields:
 - `event_type`: stable event name for routing and debugging
 - `version`: message contract version
 - `import_request_id`: generated id for tracing this import request
-- `source`: external provider, currently `usda_fdc` or `open_food_facts`
+- `source`: external provider, currently `usda_fdc`
 - `labels`: normalized dish labels to search and import
 - `limit_per_label`: max external records to inspect per label
 - `mode`: import behavior, currently `upsert` or `insert_missing`
@@ -88,9 +88,10 @@ The meal-analysis consumer microservice in `consumers/meal_analysis/main.py` doe
 3. consume messages with manual acknowledgement
 4. parse JSON and validate `event_type`, `version`, and `meal_id`
 5. mark the meal as `processing`
-6. run recognition and calorie estimation
-7. mark the meal as `done`
-8. ack the RabbitMQ message
+6. load the image from local storage or S3 using the meal `image_url`
+7. run recognition and calorie estimation
+8. mark the meal as `done`
+9. ack the RabbitMQ message
 
 On processing failure:
 - mark the meal as `failed` when the failure is business-level or non-retriable
@@ -103,10 +104,14 @@ The food-reference import consumer microservice in `consumers/food_reference_imp
 2. declare `foodsnap.food_reference_import`
 3. consume messages with manual acknowledgement
 4. validate `event_type`, `version`, `source`, and `labels`
-5. call the configured external food data provider
+5. call USDA FoodData Central through `USDAFoodDataCentralClient`
 6. normalize external records into internal `food_reference` rows
 7. upsert or insert missing records depending on `mode`
 8. ack the RabbitMQ message
+
+Current meal classifier behavior:
+- `MEAL_CLASSIFIER_BACKEND=stub` reads the loaded image metadata and uses filename keywords for local development
+- `MEAL_CLASSIFIER_BACKEND=aws_rekognition` sends an S3 object reference to AWS Rekognition when S3 bucket/key are available, otherwise sends image bytes
 
 ## Why queue is needed
 

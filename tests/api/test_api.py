@@ -4,8 +4,10 @@ from fastapi.testclient import TestClient
 
 from app.db.repositories.meals import MealRepository
 from app.db.session import get_db_session
+from app.ml.classifier import create_meal_classifier
 from app.main import create_app
 from app.services.calorie_estimator import CalorieEstimatorService
+from app.services.image_loader import MealImageLoader
 from app.services.meal_analysis import MealAnalysisService
 
 
@@ -51,6 +53,8 @@ def test_auth_upload_and_summary_flow() -> None:
             meal_analysis = MealAnalysisService(
                 MealRepository(session),
                 CalorieEstimatorService(session),
+                MealImageLoader(),
+                create_meal_classifier(),
             )
             meal_analysis.process_meal(meal_id)
         time.sleep(0.05)

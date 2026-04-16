@@ -4,6 +4,7 @@ from typing import Any
 
 from app.core.config import get_settings
 from app.db.session import get_db_session, initialize_database
+from app.services.food_data_client import USDAFoodDataCentralClient
 from app.services.food_reference_import import FoodReferenceImportService
 from consumers.rabbitmq import run_consumer
 
@@ -24,8 +25,16 @@ def process_message(payload: dict[str, Any]) -> None:
         logger.warning("Ignoring food-reference import message without labels")
         return
 
+    source = str(payload.get("source", ""))
+    if source != "usda_fdc":
+        logger.warning("Ignoring unsupported food-reference source: %s", source)
+        return
+
     with get_db_session() as session:
-        imported_count = FoodReferenceImportService(session).import_labels(
+        imported_count = FoodReferenceImportService(
+            session,
+            USDAFoodDataCentralClient(),
+        ).import_labels(
             source=str(payload.get("source", "")),
             labels=[label for label in labels if isinstance(label, str)],
             limit_per_label=int(payload.get("limit_per_label", 3)),

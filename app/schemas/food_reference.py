@@ -3,7 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 
-FoodReferenceImportSource = Literal["usda_fdc", "open_food_facts"]
+FoodReferenceImportSource = Literal["usda_fdc"]
 FoodReferenceImportMode = Literal["upsert", "insert_missing"]
 
 

@@ -5,7 +5,9 @@ from typing import Any
 from app.core.config import get_settings
 from app.db.repositories.meals import MealRepository
 from app.db.session import get_db_session, initialize_database
+from app.ml.classifier import create_meal_classifier
 from app.services.calorie_estimator import CalorieEstimatorService
+from app.services.image_loader import MealImageLoader
 from app.services.meal_analysis import MealAnalysisService
 from consumers.rabbitmq import run_consumer
 
@@ -31,6 +33,8 @@ def process_message(payload: dict[str, Any]) -> None:
             service = MealAnalysisService(
                 MealRepository(session),
                 CalorieEstimatorService(session),
+                MealImageLoader(),
+                create_meal_classifier(),
             )
             service.process_meal(meal_id)
     except Exception:

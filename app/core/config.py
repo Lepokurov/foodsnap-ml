@@ -25,6 +25,13 @@ class Settings:
         "RABBITMQ_FOOD_REFERENCE_IMPORT_QUEUE",
         "foodsnap.food_reference_import",
     )
+    usda_fdc_api_key: str = getenv("USDA_FDC_API_KEY", "DEMO_KEY")
+    usda_fdc_base_url: str = getenv(
+        "USDA_FDC_BASE_URL",
+        "https://api.nal.usda.gov/fdc/v1",
+    )
+    meal_classifier_backend: str = getenv("MEAL_CLASSIFIER_BACKEND", "stub")
+    aws_region: str = getenv("AWS_REGION", "us-east-1")
 
 
 @lru_cache

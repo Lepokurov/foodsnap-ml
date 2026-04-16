@@ -3,14 +3,17 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.db.models.food_reference import FoodReference
-from app.db.session import DEFAULT_FOOD_REFERENCE
-SUPPORTED_SOURCES = {"usda_fdc", "open_food_facts"}
+from app.services.food_data_client import FoodDataProvider
+
+
+SUPPORTED_SOURCES = {"usda_fdc"}
 SUPPORTED_MODES = {"upsert", "insert_missing"}
 
 
 class FoodReferenceImportService:
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, food_data_provider: FoodDataProvider) -> None:
         self._session = session
+        self._food_data_provider = food_data_provider
 
     def import_labels(
         self,
@@ -33,7 +36,13 @@ class FoodReferenceImportService:
             if existing is not None and mode == "insert_missing":
                 continue
 
-            estimated_calories = self._estimate_calories(label, existing)
+            estimated_calories = self._estimate_calories_from_provider(
+                label=label,
+                limit=limit_per_label,
+            )
+            if estimated_calories is None:
+                continue
+
             if existing is None:
                 self._session.add(
                     FoodReference(
@@ -50,16 +59,18 @@ class FoodReferenceImportService:
         self._session.flush()
         return imported_count
 
-    def _estimate_calories(
+    def _estimate_calories_from_provider(
         self,
+        *,
         label: str,
-        existing: FoodReference | None,
-    ) -> int:
-        if label in DEFAULT_FOOD_REFERENCE:
-            return DEFAULT_FOOD_REFERENCE[label]
-        if existing is not None:
-            return existing.estimated_calories
-        return DEFAULT_FOOD_REFERENCE["unknown"]
+        limit: int,
+    ) -> int | None:
+        candidates = self._food_data_provider.search_calories(label=label, limit=limit)
+        if not candidates:
+            return None
+
+        total_calories = sum(candidate.calories for candidate in candidates)
+        return round(total_calories / len(candidates))
 
     def _normalize_unique(self, labels: list[str]) -> list[str]:
         normalized_labels: list[str] = []

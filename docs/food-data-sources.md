@@ -2,7 +2,7 @@
 
 This document records candidate external data sources for the food-reference import consumer.
 
-The API service does not call these providers directly. It only publishes a RabbitMQ task. The `consumers/food_reference_import` microservice consumes that task and should call the chosen provider once real provider integration is added.
+The API service does not call these providers directly. It only publishes a RabbitMQ task. The `consumers/food_reference_import` microservice consumes that task and calls the configured provider.
 
 ## Recommended first provider: USDA FoodData Central
 
@@ -26,9 +26,15 @@ Suggested worker behavior:
 - extract calories from nutrients, typically energy in kcal
 - normalize the result into `food_reference.label` and `food_reference.estimated_calories`
 
-## Secondary provider: Open Food Facts
+Current implementation:
+- `USDAFoodDataCentralClient` calls `/foods/search`
+- it reads kcal energy from `foodNutrients`
+- `FoodReferenceImportService` averages returned kcal candidates for each label
+- labels with no external kcal candidates are skipped instead of receiving fake fallback values
 
-Use `open_food_facts` later, mainly for packaged or branded products.
+## Secondary provider candidate: Open Food Facts
+
+Use `open_food_facts` later, mainly for packaged or branded products. It is documented as a future candidate and is not currently accepted by the API contract.
 
 Why:
 - very large open food products database
