@@ -244,6 +244,11 @@ STORAGE_BACKEND=s3
 S3_BUCKET_NAME=your-bucket-name
 S3_UPLOAD_PREFIX=meal-uploads
 AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-access-key-id
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+AWS_SESSION_TOKEN=
 ```
 
 The S3 backend stores uploads through `boto3` and saves meal image URLs as `s3://bucket/key`, which the meal-analysis consumer can later load.
+
+For the current pet-project setup, local AWS credentials can live in the ignored `.env` file. Keep `AWS_SESSION_TOKEN` empty for long-lived IAM user keys, or fill it when using temporary session credentials. For production-style ECS runs, prefer task roles instead of static access keys.

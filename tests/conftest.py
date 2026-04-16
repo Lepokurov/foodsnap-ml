@@ -6,6 +6,7 @@ import pytest
 os.environ["DATABASE_URL"] = "sqlite+pysqlite:///./data/test.db"
 os.environ["QUEUE_BACKEND"] = "in_memory"
 os.environ["STORAGE_BACKEND"] = "local"
+os.environ["MEAL_CLASSIFIER_BACKEND"] = "stub"
 
 from app.core.config import get_settings
 from app.api.deps.queue import get_queue_service

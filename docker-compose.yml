@@ -39,6 +39,8 @@ services:
     image: foodsnap-meal-analysis-consumer:local
     container_name: foodsnap-meal-analysis-consumer
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql+psycopg://foodsnap:foodsnap@postgres:5432/foodsnap
       QUEUE_BACKEND: rabbitmq
@@ -57,6 +59,8 @@ services:
     image: foodsnap-food-reference-import-consumer:local
     container_name: foodsnap-food-reference-import-consumer
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql+psycopg://foodsnap:foodsnap@postgres:5432/foodsnap
       QUEUE_BACKEND: rabbitmq
