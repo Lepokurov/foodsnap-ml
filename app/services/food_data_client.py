@@ -42,10 +42,12 @@ class USDAFoodDataCentralClient:
         label: str,
         limit: int,
     ) -> list[FoodCalorieCandidate]:
-        response = httpx.get(
+        response = httpx.post(
             f"{self._base_url}/foods/search",
             params={
                 "api_key": self._api_key,
+            },
+            json={
                 "query": label,
                 "pageSize": limit,
                 "dataType": ["Foundation", "SR Legacy", "Survey (FNDDS)"],

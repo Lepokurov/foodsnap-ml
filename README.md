@@ -271,4 +271,6 @@ MEAL_CLASSIFIER_BACKEND=aws_rekognition
 
 The Rekognition classifier returns all detected labels as candidates. `CalorieEstimatorService` then resolves those candidates against `food_reference` with a database query, preserving the candidate order returned by Rekognition. If none of the candidates exist in `food_reference`, the meal falls back to `unknown`.
 
+The food-reference import flow treats the requested label as the internal database key. For example, importing `banana` searches USDA for banana calories and then updates or creates the `food_reference` row with `label=banana`. Provider descriptions and external ids are used only as source data, not as internal keys.
+
 The initial seed data is intentionally small: burger, pizza, salad, pasta, sushi, steak, soup, banana, and unknown. The next useful data step is to import or curate more `food_reference` rows for common Rekognition labels.

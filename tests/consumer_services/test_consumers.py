@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
+from sqlalchemy import func, select
+
 from app.db.models.food_reference import FoodReference
 from app.db.models.user import User
 from app.db.repositories.meals import MealRepository
@@ -61,6 +63,7 @@ class FakeFoodDataProvider:
         calories_by_label = {
             "pizza": 705,
             "ramen": 440,
+            "banana": 112,
         }
         calories = calories_by_label.get(label)
         if calories is None:
@@ -96,6 +99,33 @@ def test_food_reference_import_service_upserts_external_labels() -> None:
         assert ramen is not None
         assert ramen.estimated_calories == 440
         assert unknown is None
+
+
+def test_food_reference_import_service_updates_existing_label() -> None:
+    with get_db_session() as session:
+        existing_banana = session.get(FoodReference, "banana")
+        assert existing_banana is not None
+        assert existing_banana.estimated_calories == 105
+
+        imported_count = FoodReferenceImportService(
+            session,
+            FakeFoodDataProvider(),
+        ).import_labels(
+            source="usda_fdc",
+            labels=["Banana"],
+            limit_per_label=2,
+            mode="upsert",
+        )
+
+    with get_db_session() as session:
+        banana = session.get(FoodReference, "banana")
+        banana_rows = session.scalar(
+            select(func.count(FoodReference.label)).where(FoodReference.label == "banana")
+        )
+        assert imported_count == 1
+        assert banana is not None
+        assert banana.estimated_calories == 112
+        assert banana_rows == 1
 
 
 def test_food_reference_import_consumer_ignores_unsupported_source() -> None:

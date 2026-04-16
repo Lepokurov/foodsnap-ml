@@ -31,33 +31,46 @@ class FoodReferenceImportService:
             raise ValueError("limit_per_label must be greater than zero")
 
         imported_count = 0
-        for label in self._normalize_unique(labels):
-            existing = self._session.get(FoodReference, label)
+        for reference_label in self._normalize_unique(labels):
+            existing = self._session.get(FoodReference, reference_label)
             if existing is not None and mode == "insert_missing":
                 continue
 
             estimated_calories = self._estimate_calories_from_provider(
-                label=label,
+                label=reference_label,
                 limit=limit_per_label,
             )
             if estimated_calories is None:
                 continue
 
-            if existing is None:
-                self._session.add(
-                    FoodReference(
-                        label=label,
-                        estimated_calories=estimated_calories,
-                    )
-                )
-            else:
-                existing.estimated_calories = estimated_calories
-                existing.updated_at = datetime.now(timezone.utc)
-
+            self._save_reference(
+                label=reference_label,
+                estimated_calories=estimated_calories,
+                existing=existing,
+            )
             imported_count += 1
 
         self._session.flush()
         return imported_count
+
+    def _save_reference(
+        self,
+        *,
+        label: str,
+        estimated_calories: int,
+        existing: FoodReference | None,
+    ) -> None:
+        if existing is None:
+            self._session.add(
+                FoodReference(
+                    label=label,
+                    estimated_calories=estimated_calories,
+                )
+            )
+            return
+
+        existing.estimated_calories = estimated_calories
+        existing.updated_at = datetime.now(timezone.utc)
 
     def _estimate_calories_from_provider(
         self,

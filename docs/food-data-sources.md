@@ -27,10 +27,29 @@ Suggested worker behavior:
 - normalize the result into `food_reference.label` and `food_reference.estimated_calories`
 
 Current implementation:
-- `USDAFoodDataCentralClient` calls `/foods/search`
+- `USDAFoodDataCentralClient` calls `POST /foods/search`
+- the API key is sent as a query parameter, while `query`, `pageSize`, and `dataType` are sent in the JSON body
+- `dataType` is sent as an array, for example `["Foundation", "SR Legacy", "Survey (FNDDS)"]`
 - it reads kcal energy from `foodNutrients`
 - `FoodReferenceImportService` averages returned kcal candidates for each label
+- `FoodReferenceImportService` uses the requested internal label as the `food_reference.label` key
+- in `upsert` mode, existing rows are updated in place; for example, imported `banana` data updates the existing `banana` row instead of creating a provider-description key
 - labels with no external kcal candidates are skipped instead of receiving fake fallback values
+
+Example provider request shape:
+
+```http
+POST /fdc/v1/foods/search?api_key=...
+Content-Type: application/json
+
+{
+  "query": "banana",
+  "pageSize": 3,
+  "dataType": ["Foundation", "SR Legacy", "Survey (FNDDS)"]
+}
+```
+
+Keep `USDA_FDC_API_KEY` only in the ignored `.env` file. If the key appears in logs, tracebacks, screenshots, or chat, rotate it in data.gov and update `.env`.
 
 ## Current food-reference gap
 
