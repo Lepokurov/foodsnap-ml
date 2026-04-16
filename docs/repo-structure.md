@@ -36,7 +36,7 @@ Meaning for future threads:
 - do not assume the repo is only a plan
 - do not rescan the whole tree before making simple backend changes
 - the current code already supports local API flow with `PostgreSQL`
-- local file storage is still a stub
+- storage is switchable between local filesystem and S3
 - RabbitMQ publishing is implemented in the API
 - RabbitMQ consuming is implemented as two separate microservice entrypoints in this repository
 - local Python workflow is already standardized around `uv`
@@ -210,7 +210,7 @@ Shared response envelopes, pagination schemas, and common API models.
 Business logic for registration and login flows. It receives its user repository through dependency injection.
 
 ### `app/services/meal_ingestion.py`
-Coordinates upload flow: stores image locally, persists the meal record through an injected repository, and publishes a RabbitMQ meal-analysis task.
+Coordinates upload flow: stores image through the injected storage backend, persists the meal record through an injected repository, and publishes a RabbitMQ meal-analysis task.
 
 ### `app/services/meal_analysis.py`
 Coordinates prediction logic and persists recognition results through injected repository and calorie-estimator dependencies.
@@ -222,7 +222,7 @@ Converts recognized dish labels into approximate calorie estimates using the `fo
 Computes and formats daily calorie summaries through an injected summary repository.
 
 ### `app/services/storage.py`
-Abstraction over file storage. Right now it writes to local disk as a stub and should later switch to `S3`.
+Abstraction over file storage. Supports local filesystem storage and S3 storage selected by `STORAGE_BACKEND`.
 
 ### `app/services/queue.py`
 Queue abstraction for publishing meal-analysis tasks. The default backend is RabbitMQ; the in-memory backend is retained for tests.

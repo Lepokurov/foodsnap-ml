@@ -7,7 +7,7 @@ from app.db.models.user import User
 from app.db.repositories.meals import MealRepository
 from app.schemas.meal import MealCreateResponse, MealListResponse, MealResponse
 from app.services.queue import QueuePublishError, QueueService
-from app.services.storage import storage_service
+from app.services.storage import StorageService
 from app.utils.ids import new_id
 
 
@@ -20,9 +20,10 @@ class MealIngestionService:
         user: User,
         upload: UploadFile,
         queue: QueueService,
+        storage: StorageService,
     ) -> MealCreateResponse:
         meal_id = new_id("meal")
-        image_url = await storage_service.save_upload(meal_id, upload)
+        image_url = await storage.save_upload(meal_id, upload)
         timestamp = datetime.now(timezone.utc)
 
         meal = self._meals.create(
@@ -30,7 +31,7 @@ class MealIngestionService:
             user_id=user.id,
             status="pending",
             image_url=image_url,
-            image_storage=storage_service.storage_name,
+            image_storage=storage.storage_name,
             meal_timestamp=timestamp,
         )
         try:

@@ -25,7 +25,6 @@ Implemented locally:
 - `uv` workflow with committed `uv.lock` and project-local `.venv`
 
 Current temporary replacements:
-- `S3` -> local file storage in `data/uploads`
 - real nutrition provider calls -> deterministic local food-reference import stub
 
 Important note for future threads:
@@ -38,11 +37,11 @@ Important note for future threads:
 - local Python setup should use `uv sync` and `uv run`, not ad-hoc `pip`
 
 API-side work still worth doing:
-- replace local file storage with `S3`
 - add an API Dockerfile for deployment
 - add RabbitMQ connectivity to health/readiness checks
 - consider an outbox pattern for stronger DB plus queue consistency
 - restrict food-reference imports to admin/internal users later
+- configure real AWS bucket/IAM/lifecycle rules for S3 environments
 
 ## Project
 
@@ -73,7 +72,7 @@ Current decision:
 - keep background work as separate consumer microservices under `consumers/`
 - do not require `Redis` in MVP
 - use local `PostgreSQL` directly on the development machine for debugging
-- keep local stub for `S3` until that integration is introduced
+- use `STORAGE_BACKEND=local` for local development and `STORAGE_BACKEND=s3` for AWS-backed upload storage
 - use `uv` as the standard Python workflow tool
 
 Reasoning:
@@ -128,14 +127,14 @@ Components:
 
 Current local implementation:
 - local `PostgreSQL` stores users, meals, predictions, and food reference data
-- local file storage stub for uploaded images
+- switchable storage backend with local filesystem for development and S3 for AWS-backed runs
 - RabbitMQ publisher for meal-analysis and food-reference import tasks
 - no embedded consumer inside the FastAPI service
 - deployable RabbitMQ consumer entrypoints under `consumers/`
 
 Flow:
 1. user uploads a meal photo
-2. API stores image in local file storage during development
+2. API stores image through the configured storage backend
 3. API creates a `meal_entry` in `PostgreSQL` with status `pending`
 4. API publishes a JSON task to RabbitMQ
 5. meal-analysis consumer microservice consumes the task
@@ -220,8 +219,8 @@ Primary docs to read next:
 ## Immediate next step
 
 The next implementation phase should continue from the current working local-Postgres MVP:
-- introduce real `S3` integration behind the storage abstraction
 - replace the food-reference import stub with real provider clients
+- add API Dockerfile and deployment baseline
 - add retry/dead-letter handling for RabbitMQ consumers
 - keep the existing API contract stable while swapping implementations
 - keep `uv`, `pyproject.toml`, and `uv.lock` as the default local Python workflow

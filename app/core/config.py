@@ -10,7 +10,10 @@ class Settings:
     api_prefix: str = getenv("API_PREFIX", "/api/v1")
     secret_key: str = getenv("SECRET_KEY", "dev-secret-key")
     access_token_ttl_minutes: int = int(getenv("ACCESS_TOKEN_TTL_MINUTES", "1440"))
+    storage_backend: str = getenv("STORAGE_BACKEND", "local")
     local_upload_dir: Path = Path(getenv("LOCAL_UPLOAD_DIR", "data/uploads"))
+    s3_bucket_name: str = getenv("S3_BUCKET_NAME", "")
+    s3_upload_prefix: str = getenv("S3_UPLOAD_PREFIX", "meal-uploads")
     database_url: str = getenv(
         "DATABASE_URL",
         "postgresql+psycopg:///foodsnap_ml",

@@ -20,7 +20,7 @@ Already done:
 - health endpoint with live database connectivity check
 - registration and login
 - bearer-token protected meal and summary endpoints
-- meal upload with local file persistence
+- meal upload with switchable local/S3 persistence
 - local `PostgreSQL` persistence for users, meals, predictions, and food reference data
 - `SQLAlchemy` models and repository layer
 - `Alembic` migration baseline
@@ -35,7 +35,6 @@ Already done:
 - basic API and consumer smoke tests
 
 Still not done:
-- real `S3`
 - API Dockerfile
 - real food-data provider clients for the import consumer
 - deployment infra baseline beyond local Compose
@@ -242,7 +241,7 @@ Current status:
 ## Suggested implementation order
 
 1. foundation with local `PostgreSQL` and migrations
-2. swap local storage stub for real `S3` integration
+2. configure real AWS S3 bucket/IAM/lifecycle rules for AWS-backed environments
 3. replace the food-reference import stub with real provider clients
 4. add API containerization and deployment baseline
 5. add retry/dead-letter handling for consumers

@@ -76,7 +76,7 @@ The repository now contains a first API implementation focused on speed of itera
 - `FastAPI` application scaffold under `app/`
 - `PostgreSQL` persistence for users, meals, predictions, and food reference data
 - `Alembic` migration baseline for schema evolution
-- local file storage stub under `data/uploads` instead of `S3`
+- switchable storage backend: local files for development and S3 for AWS runs
 - RabbitMQ publisher for meal-analysis and food-reference import tasks
 - RabbitMQ consumer microservices under `consumers/`
 - stub classifier and rule-based calorie estimator for end-to-end meal processing
@@ -218,13 +218,32 @@ Message contract details are documented in [docs/queue-contract.md](/Users/andre
 ## Remaining Work
 
 Remaining API-side work:
-- replace local file storage with `S3`
 - add an API Dockerfile for deployment
 - add RabbitMQ connectivity to health/readiness checks
 - consider an outbox pattern for stronger DB plus queue consistency
 - restrict food-reference imports to admin/internal users later
+- configure real AWS bucket/IAM/lifecycle rules for S3 environments
 
 Next major work outside the HTTP API:
 - add production retry/dead-letter handling for the consumer microservices
 - replace stub food-reference imports with real provider calls
 - add deployment infrastructure for API, workers, database, broker, and storage
+
+## Storage Workflow
+
+Local development uses:
+
+```text
+STORAGE_BACKEND=local
+```
+
+AWS-backed runs can use:
+
+```text
+STORAGE_BACKEND=s3
+S3_BUCKET_NAME=your-bucket-name
+S3_UPLOAD_PREFIX=meal-uploads
+AWS_REGION=us-east-1
+```
+
+The S3 backend stores uploads through `boto3` and saves meal image URLs as `s3://bucket/key`, which the meal-analysis consumer can later load.

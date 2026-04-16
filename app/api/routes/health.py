@@ -13,7 +13,7 @@ def healthcheck() -> dict[str, str]:
     database_ok = check_database_connection()
     return {
         "status": "ok" if database_ok else "degraded",
-        "storage": "local_stub",
+        "storage": settings.storage_backend,
         "queue": settings.queue_backend,
         "persistence": "postgres" if "postgres" in settings.database_url else "sqlite",
         "database": "connected" if database_ok else "unavailable",
