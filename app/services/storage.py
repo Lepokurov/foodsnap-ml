@@ -54,6 +54,7 @@ class S3StorageService:
 
         client = boto3.client("s3", region_name=settings.aws_region)
         extra_args = {"ContentType": upload.content_type or "application/octet-stream"}
+        # todo: fix sync put
         client.put_object(
             Bucket=settings.s3_bucket_name,
             Key=key,
