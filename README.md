@@ -84,6 +84,7 @@ The repository now contains a first API implementation focused on speed of itera
 - `uv`-managed local environment and lockfile for reproducible setup
 
 Current status:
+- local backend MVP is functionally complete for the current architecture
 - the main API producer side is functionally complete for the current MVP architecture
 - the API owns auth, meal upload, history, summary, PostgreSQL writes, and RabbitMQ task publishing
 - the API does not consume RabbitMQ tasks
@@ -220,13 +221,13 @@ Message contract details are documented in [docs/queue-contract.md](/Users/andre
 
 ## Remaining Work
 
-Remaining API-side work:
+Post-MVP API-side work:
 - add an API Dockerfile for deployment
 - add RabbitMQ connectivity to health/readiness checks
 - consider an outbox pattern for stronger DB plus queue consistency
 - restrict food-reference imports to admin/internal users later
 
-Next major work outside the HTTP API:
+Post-MVP work outside the HTTP API:
 - add production retry/dead-letter handling for the consumer microservices
 - expand and curate `food_reference` using USDA FoodData Central import jobs
 - add deployment infrastructure for API, workers, database, broker, and storage

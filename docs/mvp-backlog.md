@@ -13,38 +13,43 @@ The focus is an end-to-end backend MVP, not maximum prediction accuracy.
 
 ## Current implementation snapshot
 
-Already done:
-- FastAPI project skeleton
-- environment-based config
-- basic logging
-- health endpoint with live database connectivity check
-- registration and login
-- bearer-token protected meal and summary endpoints
-- meal upload with switchable local/S3 persistence
-- local `PostgreSQL` persistence for users, meals, predictions, and food reference data
-- `SQLAlchemy` models and repository layer
-- `Alembic` migration baseline
-- seeded `food_reference` data
-- RabbitMQ publisher for meal-analysis tasks
-- RabbitMQ publisher for food-reference import tasks
-- RabbitMQ consumer microservices for meal analysis and food-reference imports
-- Dockerfiles for both consumer images
-- stub dish recognition
-- AWS Rekognition classifier backend
-- DB-backed label resolution from classifier candidates into `food_reference`
-- rule-based calorie estimation
-- meal history, meal detail, and daily summary
-- basic API and consumer smoke tests
+MVP backend status:
+- [x] FastAPI project skeleton
+- [x] environment-based config
+- [x] basic logging
+- [x] health endpoint with live database connectivity check
+- [x] registration and login
+- [x] bearer-token protected meal and summary endpoints
+- [x] meal upload with switchable local/S3 persistence
+- [x] local `PostgreSQL` persistence for users, meals, predictions, and food reference data
+- [x] `SQLAlchemy` models and repository layer
+- [x] `Alembic` migration baseline
+- [x] seeded `food_reference` data
+- [x] RabbitMQ publisher for meal-analysis tasks
+- [x] RabbitMQ publisher for food-reference import tasks
+- [x] RabbitMQ consumer microservices for meal analysis and food-reference imports
+- [x] Dockerfiles for both consumer images
+- [x] filename-based stub classifier for local tests
+- [x] AWS Rekognition classifier backend
+- [x] DB-backed label resolution from classifier candidates into `food_reference`
+- [x] USDA FoodData Central import client for food-reference updates
+- [x] rule-based calorie estimation
+- [x] meal history, meal detail, and daily summary
+- [x] basic API, consumer, storage, and food-data tests
 
-Still not done:
-- API Dockerfile
-- broad curated `food_reference` coverage
-- deployment infra baseline beyond local Compose
+Not blocking the local MVP, but still open:
+- [ ] API Dockerfile
+- [ ] broad curated `food_reference` coverage
+- [ ] deployment infra baseline beyond local Compose
+- [ ] production-style retry/dead-letter handling for consumers
+- [ ] RabbitMQ connectivity in health/readiness checks
+- [ ] stricter admin/internal authorization for food-reference imports
 
 Current status summary:
-- main API producer side is functionally complete for the current MVP architecture
+- local backend MVP is functionally complete for the current architecture
+- main API producer side is functionally complete
 - consumer microservice entrypoints are implemented in this repository
-- remaining work is mostly food-reference data coverage, deployment, health/observability, and security hardening
+- remaining work is mostly data coverage, deployment, health/observability, and security hardening
 
 Recommended rule for future threads:
 - treat milestones `1` to `7` as functionally prototyped
@@ -69,9 +74,9 @@ Acceptance criteria:
 - health endpoint reports a healthy application state
 
 Current status:
-- complete for local development
-- local app, config, logging, health endpoint, `PostgreSQL`, and migrations exist
-- production `RDS PostgreSQL` configuration is still pending
+- [x] complete for local development
+- [x] local app, config, logging, health endpoint, `PostgreSQL`, and migrations exist
+- [ ] production `RDS PostgreSQL` configuration is still pending
 
 ## Milestone 2. Authentication
 
@@ -90,7 +95,7 @@ Acceptance criteria:
 - user-specific data is isolated by user identity
 
 Current status:
-- complete with local `PostgreSQL` persistence
+- [x] complete with local `PostgreSQL` persistence
 
 ## Milestone 3. Meal Upload Flow
 
@@ -110,8 +115,8 @@ Acceptance criteria:
 - the response contains enough data to poll or fetch the meal later
 
 Current status:
-- complete with local storage or S3, depending on `STORAGE_BACKEND`
-- S3-backed upload works when bucket, region, and credentials are configured
+- [x] complete with local storage or S3, depending on `STORAGE_BACKEND`
+- [x] S3-backed upload works when bucket, region, and credentials are configured
 
 ## Milestone 4. Asynchronous Processing
 
@@ -133,10 +138,10 @@ Acceptance criteria:
 - meal status reflects the processing lifecycle
 
 Current status:
-- complete for API-side publishing
-- RabbitMQ publisher exists in this API service
-- external RabbitMQ consumer microservice exists under `consumers/meal_analysis`
-- meal status updates are persisted in `PostgreSQL` by processing logic
+- [x] complete for API-side publishing
+- [x] RabbitMQ publisher exists in this API service
+- [x] external RabbitMQ consumer microservice exists under `consumers/meal_analysis`
+- [x] meal status updates are persisted in `PostgreSQL` by processing logic
 
 ## Milestone 5. Dish Recognition
 
@@ -154,9 +159,9 @@ Acceptance criteria:
 - prediction metadata is stored for future debugging and model iteration
 
 Current status:
-- complete with persisted prediction metadata
-- classifier backend is switchable between filename-based stub and AWS Rekognition
-- Rekognition labels are returned as candidates and resolved through `food_reference`
+- [x] complete with persisted prediction metadata
+- [x] classifier backend is switchable between filename-based stub and AWS Rekognition
+- [x] Rekognition labels are returned as candidates and resolved through `food_reference`
 
 Notes:
 - initial implementation may use a placeholder recognizer or lightweight pre-trained integration
@@ -178,8 +183,9 @@ Acceptance criteria:
 - the estimation logic is deterministic and inspectable
 
 Current status:
-- complete with seeded `food_reference` table and DB-backed candidate matching
-- still needs broader `food_reference` coverage for realistic foods
+- [x] complete with seeded `food_reference` table and DB-backed candidate matching
+- [x] USDA FoodData Central import can update existing labels or insert missing labels
+- [ ] still needs broader `food_reference` coverage for realistic foods
 
 Notes:
 - portion estimation from photo alone is out of scope for the first MVP
@@ -201,7 +207,7 @@ Acceptance criteria:
 - a user can request a daily summary with total estimated calories
 
 Current status:
-- complete with queries backed by `PostgreSQL`
+- [x] complete with queries backed by `PostgreSQL`
 
 ## Milestone 8. Deployment Baseline
 
@@ -219,7 +225,10 @@ Acceptance criteria:
 - deployment responsibilities of API and consumer microservices are separated
 
 Current status:
-- not started
+- [ ] API Dockerfile is not implemented
+- [ ] infrastructure layout is not implemented
+- [ ] CloudWatch logging flow is not implemented
+- [ ] production deployment remains post-MVP work
 
 ## Non-goals for the first MVP
 
