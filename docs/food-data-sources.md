@@ -1,8 +1,8 @@
 # Food Data Sources
 
-This document records candidate external data sources for the future food-reference import worker.
+This document records candidate external data sources for the food-reference import consumer.
 
-The API service does not call these providers directly. It only publishes a RabbitMQ task. The external worker microservice should consume that task and call the chosen provider.
+The API service does not call these providers directly. It only publishes a RabbitMQ task. The `consumers/food_reference_import` microservice consumes that task and should call the chosen provider once real provider integration is added.
 
 ## Recommended first provider: USDA FoodData Central
 

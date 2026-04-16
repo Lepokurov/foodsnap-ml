@@ -1,0 +1,1 @@
+"""Deployable RabbitMQ consumer microservices."""

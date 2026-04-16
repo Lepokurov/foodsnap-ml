@@ -14,6 +14,9 @@ Implemented now:
 - `app/db/*`
 - `app/schemas/*`
 - `app/services/*`
+- `consumers/*`
+- `docker/Dockerfile.meal-analysis-consumer`
+- `docker/Dockerfile.food-reference-import-consumer`
 - `app/ml/*`
 - `app/utils/*`
 - `migrations/*`
@@ -28,16 +31,14 @@ Implemented now:
 
 Planned but not implemented yet:
 - `infra/*`
-- `docker/*`
-- external worker microservice repository/application
 
 Meaning for future threads:
 - do not assume the repo is only a plan
 - do not rescan the whole tree before making simple backend changes
 - the current code already supports local API flow with `PostgreSQL`
 - local file storage is still a stub
-- RabbitMQ publishing is implemented, but consuming is intentionally external
-- food-reference import task publishing is implemented, but importing is intentionally external
+- RabbitMQ publishing is implemented in the API
+- RabbitMQ consuming is implemented as two separate microservice entrypoints in this repository
 - local Python workflow is already standardized around `uv`
 
 ## Top-level layout
@@ -98,6 +99,15 @@ aws-pet-proj/
     utils/
       datetime.py
       ids.py
+  consumers/
+    rabbitmq.py
+    meal_analysis/
+      main.py
+    food_reference_import/
+      main.py
+  docker/
+    Dockerfile.meal-analysis-consumer
+    Dockerfile.food-reference-import-consumer
   migrations/
     versions/
   tests/
@@ -135,10 +145,10 @@ This file. It defines intended responsibility boundaries and highlights what alr
 Explains the chosen Python tooling standard, including `uv`, local environment expectations, and command conventions.
 
 ### `docs/queue-contract.md`
-Defines the RabbitMQ message contract between this API producer and the external meal-analysis worker microservice.
+Defines the RabbitMQ message contract between this API producer and the RabbitMQ consumer microservices.
 
 ### `docs/food-data-sources.md`
-Records external food/nutrition data sources for the future food-reference import worker.
+Records external food/nutrition data sources for the food-reference import consumer.
 
 ## Application files
 
@@ -217,6 +227,28 @@ Abstraction over file storage. Right now it writes to local disk as a stub and s
 ### `app/services/queue.py`
 Queue abstraction for publishing meal-analysis tasks. The default backend is RabbitMQ; the in-memory backend is retained for tests.
 
+### `app/services/food_reference_import.py`
+Business logic used by the food-reference import consumer. It validates import source/mode, normalizes requested labels, and upserts `food_reference` rows.
+
+## Consumer microservices
+
+### `consumers/rabbitmq.py`
+Shared RabbitMQ consumer runner. It connects to RabbitMQ, declares a durable queue, consumes one message at a time, parses JSON, and delegates valid object payloads to a service-specific handler.
+
+### `consumers/meal_analysis/main.py`
+Entry point for the meal-analysis consumer microservice. It consumes `foodsnap.meal_analysis`, validates the message contract, runs `MealAnalysisService`, and updates `PostgreSQL`.
+
+### `consumers/food_reference_import/main.py`
+Entry point for the food-reference import consumer microservice. It consumes `foodsnap.food_reference_import`, validates the message contract, and runs `FoodReferenceImportService`.
+
+## Docker files
+
+### `docker/Dockerfile.meal-analysis-consumer`
+Builds the deployable image for the meal-analysis consumer microservice.
+
+### `docker/Dockerfile.food-reference-import-consumer`
+Builds the deployable image for the food-reference import consumer microservice.
+
 ### `app/ml/classifier.py`
 Recognition entrypoint. The current version is a placeholder heuristic classifier based on filename patterns.
 
@@ -235,7 +267,7 @@ Optional helper utilities for object keys and internal identifiers.
 Base SQLAlchemy metadata import point for models and migrations.
 
 ### `app/db/session.py`
-Database engine, session management, local schema bootstrap helpers, reference-data seeding, and database connectivity checks. The `get_db_session()` context manager remains the shared low-level building block for API dependencies and future non-FastAPI workers.
+Database engine, session management, local schema bootstrap helpers, reference-data seeding, and database connectivity checks. The `get_db_session()` context manager remains the shared low-level building block for API dependencies and non-FastAPI consumers.
 
 ### `app/db/models/user.py`
 Database model for users.
@@ -320,6 +352,6 @@ Alembic configuration file.
 - Background processing should be isolated in the worker layer.
 - Storage and queue integrations should be hidden behind service abstractions.
 - API database access should flow through `Depends(get_db)` into repositories and services.
-- Future external workers should use `get_db_session()` directly and manually compose repositories/services.
+- Non-FastAPI consumers should use `get_db_session()` directly and manually compose repositories/services.
 - Calorie estimation should remain rule-based in MVP and become more advanced later only if needed.
 - Summary endpoints should read from canonical meal data instead of maintaining separate precomputed tables in the first version.

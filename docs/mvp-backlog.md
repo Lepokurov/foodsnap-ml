@@ -27,22 +27,23 @@ Already done:
 - seeded `food_reference` data
 - RabbitMQ publisher for meal-analysis tasks
 - RabbitMQ publisher for food-reference import tasks
-- external worker microservice boundary documented
+- RabbitMQ consumer microservices for meal analysis and food-reference imports
+- Dockerfiles for both consumer images
 - stub dish recognition
 - rule-based calorie estimation
 - meal history, meal detail, and daily summary
-- basic API smoke tests
+- basic API and consumer smoke tests
 
 Still not done:
 - real `S3`
-- external RabbitMQ consumer microservice
-- external food-reference import worker microservice
-- Docker and infra baseline beyond local RabbitMQ compose
+- API Dockerfile
+- real food-data provider clients for the import consumer
+- deployment infra baseline beyond local Compose
 
 Current status summary:
 - main API producer side is functionally complete for the current MVP architecture
-- remaining API work is mostly storage, deployment, health/observability, and security hardening
-- next major product work should move to worker microservices that consume RabbitMQ messages
+- consumer microservice entrypoints are implemented in this repository
+- remaining work is mostly storage, deployment, real provider integration, health/observability, and security hardening
 
 Recommended rule for future threads:
 - treat milestones `1` to `7` as functionally prototyped
@@ -118,7 +119,7 @@ Goal: decouple upload from meal analysis.
 Tasks:
 - send meal-analysis tasks to `RabbitMQ`
 - keep the API as a producer only
-- define the contract for a separate worker microservice
+- define the contract for separate consumer microservices
 - load the meal entry and image during processing
 - update meal status to `processing`, then `done` or `failed`
 - log task outcomes
@@ -126,7 +127,7 @@ Tasks:
 Acceptance criteria:
 - each upload enqueues a processing task
 - the API publishes a durable RabbitMQ message
-- the separate worker can consume and process tasks
+- the separate consumer can consume and process tasks
 - task failures do not crash the whole service
 - meal status reflects the processing lifecycle
 
@@ -212,7 +213,7 @@ Tasks:
 Acceptance criteria:
 - the app can be containerized
 - infra layout is defined clearly enough for implementation
-- deployment responsibilities of API and the external worker microservice are separated
+- deployment responsibilities of API and consumer microservices are separated
 
 Current status:
 - not started
@@ -242,7 +243,7 @@ Current status:
 
 1. foundation with local `PostgreSQL` and migrations
 2. swap local storage stub for real `S3` integration
-3. build the external RabbitMQ worker microservice
-4. build the external food-reference import worker microservice
-5. add API containerization and deployment baseline
+3. replace the food-reference import stub with real provider clients
+4. add API containerization and deployment baseline
+5. add retry/dead-letter handling for consumers
 6. add stronger consistency and observability patterns when needed

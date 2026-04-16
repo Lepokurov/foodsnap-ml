@@ -1,0 +1,1 @@
+"""Meal-analysis consumer service."""

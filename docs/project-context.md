@@ -4,7 +4,7 @@ This file is a durable short-form briefing for future threads. It is meant to be
 
 ## Current status
 
-As of `2026-04-15`, the repository contains a working local MVP with real local `PostgreSQL` persistence and RabbitMQ publishing.
+As of `2026-04-16`, the repository contains a working local MVP with real local `PostgreSQL` persistence, RabbitMQ publishing, and two RabbitMQ consumer microservices.
 
 Implemented locally:
 - `FastAPI` app scaffold
@@ -18,20 +18,21 @@ Implemented locally:
 - local database health check in `GET /api/v1/health`
 - RabbitMQ publisher for meal-analysis tasks
 - RabbitMQ publisher for food-reference import tasks
+- meal-analysis RabbitMQ consumer under `consumers/meal_analysis`
+- food-reference import RabbitMQ consumer under `consumers/food_reference_import`
+- Dockerfiles for both consumer images under `docker/`
 - stub classifier and rule-based calorie estimation
 - `uv` workflow with committed `uv.lock` and project-local `.venv`
 
 Current temporary replacements:
 - `S3` -> local file storage in `data/uploads`
-- meal-analysis worker -> external microservice, not implemented in this API repo
-- food-reference import worker -> external microservice, not implemented in this API repo
+- real nutrition provider calls -> deterministic local food-reference import stub
 
 Important note for future threads:
 - the API pipeline works end-to-end locally
 - persistence is no longer in-memory; use the local `foodsnap_ml` PostgreSQL database
-- this API service only publishes RabbitMQ tasks; it does not consume them
+- the FastAPI service only publishes RabbitMQ tasks; consumers are separate microservice entrypoints in this repo
 - the main API producer side is functionally complete for the current MVP architecture
-- most remaining product behavior now belongs in external RabbitMQ worker microservices
 - current goal is not scaffolding anymore
 - next work should build on the existing code, not recreate structure from scratch
 - local Python setup should use `uv sync` and `uv run`, not ad-hoc `pip`
@@ -69,7 +70,7 @@ The selected implementation path is the practical AWS-first version:
 
 Current decision:
 - use `RabbitMQ` for meal-analysis task dispatch
-- keep the worker as a separate microservice outside this API repo
+- keep background work as separate consumer microservices under `consumers/`
 - do not require `Redis` in MVP
 - use local `PostgreSQL` directly on the development machine for debugging
 - keep local stub for `S3` until that integration is introduced
@@ -90,7 +91,7 @@ Included:
 - create meal entry in local `PostgreSQL`
 - publish meal-analysis task to `RabbitMQ`
 - publish food-reference import task to `RabbitMQ`
-- let an external worker microservice process the task asynchronously
+- let consumer microservices process tasks asynchronously
 - store recognized label, confidence, and estimated calories
 - fetch meal history
 - fetch daily calorie summary
@@ -130,15 +131,16 @@ Current local implementation:
 - local file storage stub for uploaded images
 - RabbitMQ publisher for meal-analysis and food-reference import tasks
 - no embedded consumer inside the FastAPI service
+- deployable RabbitMQ consumer entrypoints under `consumers/`
 
 Flow:
 1. user uploads a meal photo
 2. API stores image in local file storage during development
 3. API creates a `meal_entry` in `PostgreSQL` with status `pending`
 4. API publishes a JSON task to RabbitMQ
-5. external worker microservice consumes the task
-6. worker runs recognition and calorie estimation
-7. worker updates the meal record and prediction metadata in `PostgreSQL`
+5. meal-analysis consumer microservice consumes the task
+6. consumer runs recognition and calorie estimation
+7. consumer updates the meal record and prediction metadata in `PostgreSQL`
 8. user reads meal history and daily summary
 
 ## Local run
@@ -157,6 +159,12 @@ uv sync --extra dev
 docker compose up -d rabbitmq
 uv run ./scripts/migrate.sh
 uv run ./scripts/run-api.sh
+```
+
+Run the consumer microservices with Docker Compose:
+
+```bash
+docker compose up --build meal-analysis-consumer food-reference-import-consumer
 ```
 
 Verify database schema:
@@ -197,7 +205,7 @@ Important `meal_entries` fields:
 - store metadata that will make later ML upgrades easier
 - standardize local Python workflow around `uv`, `pyproject.toml`, and a project-local `.venv`
 - use FastAPI dependency injection for API services, repositories, queue access, and request-scoped database sessions
-- keep `get_db_session()` as the low-level database context manager for future non-FastAPI workers
+- keep `get_db_session()` as the low-level database context manager for non-FastAPI consumers
 
 ## Current planning artifacts
 
@@ -212,8 +220,8 @@ Primary docs to read next:
 ## Immediate next step
 
 The next implementation phase should continue from the current working local-Postgres MVP:
-- build the external RabbitMQ consumer microservice
-- build the external food-reference import worker microservice
 - introduce real `S3` integration behind the storage abstraction
+- replace the food-reference import stub with real provider clients
+- add retry/dead-letter handling for RabbitMQ consumers
 - keep the existing API contract stable while swapping implementations
 - keep `uv`, `pyproject.toml`, and `uv.lock` as the default local Python workflow

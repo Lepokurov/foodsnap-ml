@@ -32,5 +32,41 @@ services:
       timeout: 5s
       retries: 5
 
+  meal-analysis-consumer:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.meal-analysis-consumer
+    image: foodsnap-meal-analysis-consumer:local
+    container_name: foodsnap-meal-analysis-consumer
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://foodsnap:foodsnap@postgres:5432/foodsnap
+      QUEUE_BACKEND: rabbitmq
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_MEAL_ANALYSIS_QUEUE: foodsnap.meal_analysis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  food-reference-import-consumer:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.food-reference-import-consumer
+    image: foodsnap-food-reference-import-consumer:local
+    container_name: foodsnap-food-reference-import-consumer
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://foodsnap:foodsnap@postgres:5432/foodsnap
+      QUEUE_BACKEND: rabbitmq
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_FOOD_REFERENCE_IMPORT_QUEUE: foodsnap.food_reference_import
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
 volumes:
   postgres_data:

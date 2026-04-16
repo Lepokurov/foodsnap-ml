@@ -1,6 +1,6 @@
 # Queue Contract
 
-This document describes the RabbitMQ contract between the FoodSnap ML API service and external worker microservices.
+This document describes the RabbitMQ contract between the FoodSnap ML API service and RabbitMQ consumer microservices.
 
 ## Decision
 
@@ -8,7 +8,7 @@ The API service is a producer only.
 
 It does not consume meal-analysis jobs and does not run an embedded worker inside the FastAPI lifespan.
 
-External worker microservices are responsible for:
+Consumer microservices are responsible for:
 - consuming RabbitMQ messages
 - loading required state from `PostgreSQL`
 - running the requested background process
@@ -81,7 +81,7 @@ Fields:
 
 ## Expected worker flow
 
-The separate meal-analysis worker microservice should roughly do this:
+The meal-analysis consumer microservice in `consumers/meal_analysis/main.py` does this:
 
 1. connect to RabbitMQ
 2. declare the same durable queue
@@ -97,7 +97,7 @@ On processing failure:
 - reject/nack the message based on retry strategy
 - avoid acking a failed transient task before it is safely handled
 
-The separate food-reference import worker microservice should roughly do this:
+The food-reference import consumer microservice in `consumers/food_reference_import/main.py` does this:
 
 1. connect to RabbitMQ
 2. declare `foodsnap.food_reference_import`
@@ -125,6 +125,12 @@ Start RabbitMQ locally:
 
 ```bash
 docker compose up -d rabbitmq
+```
+
+Start both local consumer services:
+
+```bash
+docker compose up --build meal-analysis-consumer food-reference-import-consumer
 ```
 
 RabbitMQ management UI:

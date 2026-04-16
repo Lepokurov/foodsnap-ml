@@ -41,7 +41,7 @@ Core user flow:
 2. The API stores the original image in `S3`.
 3. The system creates a meal entry with status `pending`.
 4. The API publishes a meal-analysis task to `RabbitMQ`.
-5. An external worker microservice consumes the task and processes the image.
+5. The meal-analysis consumer microservice consumes the task and processes the image.
 6. The worker stores the recognized label, confidence, and estimated calories.
 7. The user retrieves meal history and daily summary through the API.
 
@@ -49,7 +49,7 @@ Core user flow:
 
 Main components:
 - `API service` handles authentication, uploads, meal history, and summaries.
-- `Worker service` handles background meal analysis.
+- `Consumer services` handle background meal analysis and food-reference imports.
 - `PostgreSQL` stores users, meal entries, prediction metadata, and reference food data.
 - `S3` stores uploaded meal photos.
 - `RabbitMQ` decouples upload requests from background processing.
@@ -77,8 +77,8 @@ The repository now contains a first API implementation focused on speed of itera
 - `PostgreSQL` persistence for users, meals, predictions, and food reference data
 - `Alembic` migration baseline for schema evolution
 - local file storage stub under `data/uploads` instead of `S3`
-- RabbitMQ publisher for meal-analysis tasks
-- external worker microservice is expected to consume RabbitMQ tasks
+- RabbitMQ publisher for meal-analysis and food-reference import tasks
+- RabbitMQ consumer microservices under `consumers/`
 - stub classifier and rule-based calorie estimator for end-to-end meal processing
 - `uv`-managed local environment and lockfile for reproducible setup
 
@@ -86,7 +86,7 @@ Current status:
 - the main API producer side is functionally complete for the current MVP architecture
 - the API owns auth, meal upload, history, summary, PostgreSQL writes, and RabbitMQ task publishing
 - the API does not consume RabbitMQ tasks
-- meal analysis and food-reference importing should be implemented as separate worker microservices
+- meal analysis and food-reference importing are implemented as separate RabbitMQ consumer microservices under `consumers/`
 
 Implemented API endpoints:
 - `POST /api/v1/auth/register`
@@ -118,6 +118,19 @@ cp .env.example .env
 ```
 
 `docker-compose.yml` currently provides local RabbitMQ. Local-on-machine PostgreSQL is still the primary database debug setup for now.
+
+Run consumer microservices with Docker Compose:
+
+```bash
+docker compose up --build meal-analysis-consumer food-reference-import-consumer
+```
+
+Build the consumer images directly:
+
+```bash
+docker build -f docker/Dockerfile.meal-analysis-consumer -t foodsnap-meal-analysis-consumer:local .
+docker build -f docker/Dockerfile.food-reference-import-consumer -t foodsnap-food-reference-import-consumer:local .
+```
 
 ## Local PostgreSQL setup
 
@@ -211,7 +224,7 @@ Remaining API-side work:
 - consider an outbox pattern for stronger DB plus queue consistency
 - restrict food-reference imports to admin/internal users later
 
-Next major work outside this API service:
-- build the meal-analysis worker microservice
-- build the food-reference import worker microservice
+Next major work outside the HTTP API:
+- add production retry/dead-letter handling for the consumer microservices
+- replace stub food-reference imports with real provider calls
 - add deployment infrastructure for API, workers, database, broker, and storage
