@@ -1,6 +1,5 @@
 from app.db.repositories.meals import MealRepository
 from app.ml.classifier import MealClassifier
-from app.ml.label_mapping import normalize_label
 from app.services.calorie_estimator import CalorieEstimatorService
 from app.services.image_loader import MealImageLoader
 
@@ -24,8 +23,9 @@ class MealAnalysisService:
             return
 
         image = self._image_loader.load(meal)
-        raw_label, confidence = self._classifier.classify(image)
-        normalized_label = normalize_label(raw_label)
+        candidates = self._classifier.classify(image)
+        raw_label = candidates[0][0] if candidates else "unknown"
+        normalized_label, confidence = self._calorie_estimator.resolve_label(candidates)
         estimated_calories = self._calorie_estimator.estimate(normalized_label)
 
         self._meals.complete(

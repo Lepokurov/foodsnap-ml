@@ -86,6 +86,7 @@ def upgrade() -> None:
             {"label": "sushi", "estimated_calories": 420, "created_at": now, "updated_at": now},
             {"label": "steak", "estimated_calories": 610, "created_at": now, "updated_at": now},
             {"label": "soup", "estimated_calories": 240, "created_at": now, "updated_at": now},
+            {"label": "banana", "estimated_calories": 105, "created_at": now, "updated_at": now},
             {"label": "unknown", "estimated_calories": 450, "created_at": now, "updated_at": now},
         ],
     )

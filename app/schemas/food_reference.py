@@ -18,6 +18,7 @@ class FoodReferenceImportRequest(BaseModel):
             "sushi",
             "steak",
             "soup",
+            "banana",
         ],
         min_length=1,
         max_length=100,

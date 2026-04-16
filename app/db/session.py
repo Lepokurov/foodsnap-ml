@@ -19,6 +19,7 @@ DEFAULT_FOOD_REFERENCE = {
     "sushi": 420,
     "steak": 610,
     "soup": 240,
+    "banana": 105,
     "unknown": 450,
 }
 
